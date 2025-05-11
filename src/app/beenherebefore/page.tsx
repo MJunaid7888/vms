@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button } from '../../components/Button'; // Adjusted the path to match the relative location of the Button component
+import { Button } from "@/components/ui/button" // Adjusted the path to match the relative location of the Button component
 import { ChevronDown, Menu } from 'lucide-react';
 
 export default function VisitorForm() {

@@ -21,8 +21,8 @@ export default function Home() {
       <nav className="flex flex-col md:flex-row justify-between items-center mb-12 relative">
         <div className="text-2xl md:text-3xl font-bold text-blue-800">QuickPass</div>
         <div className="flex flex-col md:flex-row items-center gap-4 mt-4 md:mt-0">
-          <a href="haveappoinment\page.tsx" className="text-black font-semibold">Have Appointment</a>
-          <a href="beenherebefore\page.tsx" className="text-black font-semibold">Been here Before</a>
+          <a href="/haveappoinment" className="text-black font-semibold">Have Appointment</a>
+          <a href="/beenherebefore" className="text-black font-semibold">Been here Before</a>
           <div className="relative">
             <button
               onClick={() => setLanguageOpen(!languageOpen)}

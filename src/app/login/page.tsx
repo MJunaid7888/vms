@@ -1,14 +1,14 @@
 // App.tsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 // Removed incorrect import of Login as it is defined in this file
-import { Signup } from './pages/Signup';
+import SignupPage from '../signup/page';
 
 const App = () => {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+        <Route path="/signup" element={<SignupPage />} />
       </Routes>
     </Router>
   );
@@ -102,4 +102,4 @@ const Signup = () => {
   );
 };
 
-export { Signup };
+export { Signup as SignupPage };

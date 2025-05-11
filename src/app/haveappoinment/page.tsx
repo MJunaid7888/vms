@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/Button'; // Assuming the Button component is in the src/components directory
+import { Button } from "@/components/ui/button" // Assuming the Button component is in the src/components directory
 import { ChevronDown, Menu } from 'lucide-react';
 
 export default function VisitorForm() {
