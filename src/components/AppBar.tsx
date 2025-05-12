@@ -4,17 +4,21 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
-import { 
-  ChevronDown, 
-  Menu, 
-  X, 
-  User, 
-  LogOut, 
-  Settings, 
-  Bell, 
+import {
+  ChevronDown,
+  Menu,
+  X,
+  User,
+  LogOut,
+  Settings,
+  Bell,
   BarChart2,
   Home,
-  UserPlus
+  UserPlus,
+  FileText,
+  BookOpen,
+  Shield,
+  LayoutDashboard
 } from 'lucide-react';
 
 interface AppBarProps {
@@ -25,19 +29,19 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
   const [languageOpen, setLanguageOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  
+
   const { user, logout } = useAuth();
   const pathname = usePathname();
-  
+
   const isActive = (path: string) => {
     return pathname === path;
   };
-  
+
   const handleLogout = () => {
     logout();
     setUserMenuOpen(false);
   };
-  
+
   return (
     <nav className="bg-white shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -49,38 +53,38 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
                 QuickPass
               </Link>
             </div>
-            
+
             {/* Desktop navigation */}
             <div className="hidden sm:ml-10 sm:flex sm:space-x-8">
-              <Link 
-                href="/" 
+              <Link
+                href="/"
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/') 
-                    ? 'border-blue-700 text-blue-700' 
+                  isActive('/')
+                    ? 'border-blue-700 text-blue-700'
                     : 'border-transparent text-gray-700 hover:text-blue-700 hover:border-blue-300'
                 }`}
               >
                 <Home className="mr-1 h-4 w-4" />
                 Home
               </Link>
-              
-              <Link 
-                href="/check-in" 
+
+              <Link
+                href="/check-in"
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/check-in') 
-                    ? 'border-blue-700 text-blue-700' 
+                  isActive('/check-in')
+                    ? 'border-blue-700 text-blue-700'
                     : 'border-transparent text-gray-700 hover:text-blue-700 hover:border-blue-300'
                 }`}
               >
                 <UserPlus className="mr-1 h-4 w-4" />
                 New Visitor
               </Link>
-              
-              <Link 
-                href="/beenherebefore" 
+
+              <Link
+                href="/beenherebefore"
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/beenherebefore') 
-                    ? 'border-blue-700 text-blue-700' 
+                  isActive('/beenherebefore')
+                    ? 'border-blue-700 text-blue-700'
                     : 'border-transparent text-gray-700 hover:text-blue-700 hover:border-blue-300'
                 }`}
               >
@@ -89,7 +93,7 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
               </Link>
             </div>
           </div>
-          
+
           {/* Secondary navigation */}
           <div className="hidden sm:ml-6 sm:flex sm:items-center sm:space-x-4">
             {/* Language selector */}
@@ -101,7 +105,7 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
                 <span>English</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
-              
+
               {languageOpen && (
                 <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
                   <div className="py-1">
@@ -115,7 +119,7 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
                 </div>
               )}
             </div>
-            
+
             {/* Auth buttons */}
             {showAuthButtons && (
               <>
@@ -131,32 +135,80 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
                       <span className="font-medium">{user.firstName || 'User'}</span>
                       <ChevronDown className="w-4 h-4" />
                     </button>
-                    
+
                     {userMenuOpen && (
                       <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
                         <div className="py-1">
-                          <Link 
-                            href="/admin/dashboard" 
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={() => setUserMenuOpen(false)}
-                          >
-                            <div className="flex items-center">
-                              <Home className="mr-2 h-4 w-4" />
-                              Dashboard
-                            </div>
-                          </Link>
-                          <Link 
-                            href="/admin/analytics" 
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={() => setUserMenuOpen(false)}
-                          >
-                            <div className="flex items-center">
-                              <BarChart2 className="mr-2 h-4 w-4" />
-                              Analytics
-                            </div>
-                          </Link>
-                          <Link 
-                            href="/profile" 
+                          {user?.role === 'admin' && (
+                            <>
+                              <div className="px-4 py-2 text-xs font-semibold text-gray-500 bg-gray-50">
+                                Admin
+                              </div>
+                              <Link
+                                href="/admin/dashboard"
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setUserMenuOpen(false)}
+                              >
+                                <div className="flex items-center">
+                                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                                  Dashboard
+                                </div>
+                              </Link>
+                              <Link
+                                href="/admin/visitors"
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setUserMenuOpen(false)}
+                              >
+                                <div className="flex items-center">
+                                  <User className="mr-2 h-4 w-4" />
+                                  Visitors
+                                </div>
+                              </Link>
+                              <Link
+                                href="/admin/documents"
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setUserMenuOpen(false)}
+                              >
+                                <div className="flex items-center">
+                                  <FileText className="mr-2 h-4 w-4" />
+                                  Documents
+                                </div>
+                              </Link>
+                              <Link
+                                href="/admin/training"
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setUserMenuOpen(false)}
+                              >
+                                <div className="flex items-center">
+                                  <BookOpen className="mr-2 h-4 w-4" />
+                                  Training
+                                </div>
+                              </Link>
+                              <Link
+                                href="/admin/analytics"
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setUserMenuOpen(false)}
+                              >
+                                <div className="flex items-center">
+                                  <BarChart2 className="mr-2 h-4 w-4" />
+                                  Analytics
+                                </div>
+                              </Link>
+                              <Link
+                                href="/admin/settings"
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setUserMenuOpen(false)}
+                              >
+                                <div className="flex items-center">
+                                  <Settings className="mr-2 h-4 w-4" />
+                                  Settings
+                                </div>
+                              </Link>
+                              <div className="border-t border-gray-100 my-1"></div>
+                            </>
+                          )}
+                          <Link
+                            href="/profile"
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                             onClick={() => setUserMenuOpen(false)}
                           >
@@ -165,8 +217,8 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
                               Profile
                             </div>
                           </Link>
-                          <Link 
-                            href="/settings" 
+                          <Link
+                            href="/settings"
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                             onClick={() => setUserMenuOpen(false)}
                           >
@@ -190,14 +242,14 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
                   </div>
                 ) : (
                   <div className="flex items-center space-x-3">
-                    <Link 
-                      href="/login" 
+                    <Link
+                      href="/login"
                       className="text-blue-700 hover:text-blue-800 px-3 py-2 rounded-md text-sm font-medium"
                     >
                       Login
                     </Link>
-                    <Link 
-                      href="/signup" 
+                    <Link
+                      href="/signup"
                       className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors text-sm font-medium"
                     >
                       Sign Up
@@ -207,7 +259,7 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
               </>
             )}
           </div>
-          
+
           {/* Mobile menu button */}
           <div className="flex items-center sm:hidden">
             <button
@@ -223,7 +275,7 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
           </div>
         </div>
       </div>
-      
+
       {/* Mobile menu */}
       {menuOpen && (
         <div className="sm:hidden">
@@ -231,8 +283,8 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
             <Link
               href="/"
               className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                isActive('/') 
-                  ? 'border-blue-700 text-blue-700 bg-blue-50' 
+                isActive('/')
+                  ? 'border-blue-700 text-blue-700 bg-blue-50'
                   : 'border-transparent text-gray-700 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900'
               }`}
               onClick={() => setMenuOpen(false)}
@@ -242,8 +294,8 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
             <Link
               href="/check-in"
               className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                isActive('/check-in') 
-                  ? 'border-blue-700 text-blue-700 bg-blue-50' 
+                isActive('/check-in')
+                  ? 'border-blue-700 text-blue-700 bg-blue-50'
                   : 'border-transparent text-gray-700 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900'
               }`}
               onClick={() => setMenuOpen(false)}
@@ -253,8 +305,8 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
             <Link
               href="/beenherebefore"
               className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                isActive('/beenherebefore') 
-                  ? 'border-blue-700 text-blue-700 bg-blue-50' 
+                isActive('/beenherebefore')
+                  ? 'border-blue-700 text-blue-700 bg-blue-50'
                   : 'border-transparent text-gray-700 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900'
               }`}
               onClick={() => setMenuOpen(false)}
@@ -262,7 +314,7 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
               Return Visitor
             </Link>
           </div>
-          
+
           <div className="pt-4 pb-3 border-t border-gray-200">
             {user ? (
               <>
@@ -278,39 +330,102 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
                   </div>
                 </div>
                 <div className="mt-3 space-y-1">
-                  <Link
-                    href="/admin/dashboard"
-                    className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-100"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    Dashboard
-                  </Link>
-                  <Link
-                    href="/admin/analytics"
-                    className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-100"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    Analytics
-                  </Link>
+                  {user?.role === 'admin' && (
+                    <>
+                      <div className="px-4 py-2 text-xs font-semibold text-gray-500 bg-gray-50">
+                        Admin
+                      </div>
+                      <Link
+                        href="/admin/dashboard"
+                        className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-100"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <div className="flex items-center">
+                          <LayoutDashboard className="mr-2 h-5 w-5" />
+                          Dashboard
+                        </div>
+                      </Link>
+                      <Link
+                        href="/admin/visitors"
+                        className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-100"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <div className="flex items-center">
+                          <User className="mr-2 h-5 w-5" />
+                          Visitors
+                        </div>
+                      </Link>
+                      <Link
+                        href="/admin/documents"
+                        className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-100"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <div className="flex items-center">
+                          <FileText className="mr-2 h-5 w-5" />
+                          Documents
+                        </div>
+                      </Link>
+                      <Link
+                        href="/admin/training"
+                        className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-100"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <div className="flex items-center">
+                          <BookOpen className="mr-2 h-5 w-5" />
+                          Training
+                        </div>
+                      </Link>
+                      <Link
+                        href="/admin/analytics"
+                        className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-100"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <div className="flex items-center">
+                          <BarChart2 className="mr-2 h-5 w-5" />
+                          Analytics
+                        </div>
+                      </Link>
+                      <Link
+                        href="/admin/settings"
+                        className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-100"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <div className="flex items-center">
+                          <Settings className="mr-2 h-5 w-5" />
+                          Settings
+                        </div>
+                      </Link>
+                      <div className="border-t border-gray-200 my-2"></div>
+                    </>
+                  )}
                   <Link
                     href="/profile"
                     className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-100"
                     onClick={() => setMenuOpen(false)}
                   >
-                    Profile
+                    <div className="flex items-center">
+                      <User className="mr-2 h-5 w-5" />
+                      Profile
+                    </div>
                   </Link>
                   <Link
                     href="/settings"
                     className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-100"
                     onClick={() => setMenuOpen(false)}
                   >
-                    Settings
+                    <div className="flex items-center">
+                      <Settings className="mr-2 h-5 w-5" />
+                      Settings
+                    </div>
                   </Link>
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-4 py-2 text-base font-medium text-red-600 hover:bg-red-50"
                   >
-                    Logout
+                    <div className="flex items-center">
+                      <LogOut className="mr-2 h-5 w-5" />
+                      Logout
+                    </div>
                   </button>
                 </div>
               </>
@@ -332,7 +447,7 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
                 </Link>
               </div>
             )}
-            
+
             <div className="mt-3 px-2 space-y-1 border-t border-gray-200 pt-3">
               <button
                 onClick={() => setLanguageOpen(!languageOpen)}

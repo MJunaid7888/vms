@@ -310,11 +310,91 @@ export const visitorAPI = {
       throw error;
     }
   },
+
+  // New endpoint: Get visit history
+  getVisitHistory: async (token: string, startDate?: string, endDate?: string, status?: string, location?: string): Promise<Visitor[]> => {
+    try {
+      let url = `${API_BASE_URL}/visitors/visits`;
+      const params = new URLSearchParams();
+
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      if (status) params.append('status', status);
+      if (location) params.append('location', location);
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get visit history error:', error);
+      throw error;
+    }
+  },
+
+  // New endpoint: Get visit history for a specific visitor
+  getVisitorHistory: async (visitorId: string, token: string): Promise<Visitor[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/visitors/visits/${visitorId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get visitor history error:', error);
+      throw error;
+    }
+  },
 };
 
 // Training API
+export interface Training {
+  _id: string;
+  title: string;
+  description: string;
+  type: 'safety' | 'security' | 'procedure' | 'other';
+  content: string;
+  questions: {
+    question: string;
+    options: string[];
+    correctAnswer: number;
+  }[];
+  requiredScore: number;
+  isActive: boolean;
+}
+
+export interface TrainingEnrollment {
+  _id: string;
+  visitorId: string;
+  trainingId: string;
+  status: 'NotStarted' | 'InProgress' | 'Completed';
+  score?: number;
+  passed?: boolean;
+}
+
+export interface Certificate {
+  certificateId: string;
+  visitorName: string;
+  trainingTitle: string;
+  trainingType: string;
+  score: number;
+  completionDate: string;
+  issueDate: string;
+}
+
 export const trainingAPI = {
-  getAllTrainings: async (token: string) => {
+  getAllTrainings: async (token: string): Promise<Training[]> => {
     try {
       const response = await fetch(`${API_BASE_URL}/training`, {
         method: 'GET',
@@ -326,6 +406,56 @@ export const trainingAPI = {
       return handleResponse(response);
     } catch (error) {
       console.error('Get trainings error:', error);
+      throw error;
+    }
+  },
+
+  getTrainingById: async (trainingId: string, token: string): Promise<Training> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/training/${trainingId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get training by ID error:', error);
+      throw error;
+    }
+  },
+
+  updateTraining: async (trainingId: string, trainingData: Partial<Training>, token: string): Promise<Training> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/training/${trainingId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(trainingData),
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Update training error:', error);
+      throw error;
+    }
+  },
+
+  deleteTraining: async (trainingId: string, token: string): Promise<{ message: string }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/training/${trainingId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Delete training error:', error);
       throw error;
     }
   },
@@ -360,6 +490,42 @@ export const trainingAPI = {
       return handleResponse(response);
     } catch (error) {
       console.error('Get training status error:', error);
+      throw error;
+    }
+  },
+
+  // New endpoint: Enroll visitor in training
+  enrollVisitor: async (visitorId: string, trainingId: string, token: string): Promise<TrainingEnrollment> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/training/enrollments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ visitorId, trainingId }),
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Enroll visitor in training error:', error);
+      throw error;
+    }
+  },
+
+  // New endpoint: Generate certificate
+  generateCertificate: async (enrollmentId: string, token: string): Promise<Certificate> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/training/certificates/${enrollmentId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Generate certificate error:', error);
       throw error;
     }
   },
@@ -402,6 +568,206 @@ export const accessControlAPI = {
   },
 };
 
+// Notification API
+export interface Notification {
+  _id: string;
+  type: 'visitor-arrival' | 'visitor-departure' | 'visitor-registration' | 'visitor-cancelled' |
+        'check-in' | 'check-out' | 'registration' | 'cancelled' | 'welcome' | 'reset-password';
+  recipient: string;
+  status: 'sent' | 'failed' | 'pending';
+  timestamp: string;
+}
+
+export interface NotificationSettings {
+  emailNotificationsEnabled: boolean;
+  hostNotificationsEnabled: boolean;
+  visitorNotificationsEnabled: boolean;
+  notificationTypes: Record<string, boolean>;
+}
+
+export const notificationAPI = {
+  // Send notification to visitor
+  sendVisitorNotification: async (visitorId: string, type: Notification['type'], message: string, token: string): Promise<{ message: string }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/notifications/visitor`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ visitorId, type, message }),
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Send visitor notification error:', error);
+      throw error;
+    }
+  },
+
+  // Send notification to host
+  sendHostNotification: async (hostId: string, type: Notification['type'], visitorId: string, message: string, token: string): Promise<{ message: string }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/notifications/host`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ hostId, type, visitorId, message }),
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Send host notification error:', error);
+      throw error;
+    }
+  },
+
+  // Get notification history
+  getNotificationHistory: async (token: string): Promise<Notification[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/notifications/history`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get notification history error:', error);
+      throw error;
+    }
+  },
+
+  // Get notification settings
+  getNotificationSettings: async (token: string): Promise<NotificationSettings> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/notifications/settings`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get notification settings error:', error);
+      throw error;
+    }
+  },
+
+  // Update notification settings
+  updateNotificationSettings: async (settings: NotificationSettings, token: string): Promise<{ message: string }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/notifications/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ settings }),
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Update notification settings error:', error);
+      throw error;
+    }
+  },
+};
+
+// Document Management API
+export interface Document {
+  _id: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  visitorId: string;
+  uploadedBy: string;
+  uploadedAt: string;
+  documentType: 'id' | 'nda' | 'training' | 'other';
+  description?: string;
+}
+
+export const documentAPI = {
+  // Upload document
+  uploadDocument: async (file: File, visitorId: string, documentType: Document['documentType'], description: string, token: string): Promise<Document> => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('visitorId', visitorId);
+      formData.append('documentType', documentType);
+      if (description) formData.append('description', description);
+
+      const response = await fetch(`${API_BASE_URL}/documents/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Upload document error:', error);
+      throw error;
+    }
+  },
+
+  // Get visitor documents
+  getVisitorDocuments: async (visitorId: string, token: string): Promise<Document[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/documents/visitor/${visitorId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get visitor documents error:', error);
+      throw error;
+    }
+  },
+
+  // Get document by ID
+  getDocument: async (documentId: string, token: string): Promise<Document> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/documents/${documentId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get document error:', error);
+      throw error;
+    }
+  },
+
+  // Delete document
+  deleteDocument: async (documentId: string, token: string): Promise<{ message: string }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/documents/${documentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Delete document error:', error);
+      throw error;
+    }
+  },
+};
+
 export interface Employee {
   id: string;
   name: string;
@@ -423,9 +789,39 @@ export const employeeAPI = {
       return handleResponse(response);
     } catch (error) {
       console.error('Get employees error:', error);
-      console.warn('Falling back to mock employee data');
 
-      // Return mock data if the API call fails
+      // Check if it's a network error or if the endpoint doesn't exist
+      if (error instanceof Error &&
+          (error.message.includes('Failed to fetch') ||
+           error.message.includes('404') ||
+           error.message.includes('Not Found'))) {
+        console.warn('Employee API endpoint not available, falling back to user data');
+
+        // Try to get users instead, which can serve as employees
+        try {
+          const usersResponse = await fetch(`${API_BASE_URL}/users`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          const users = await handleResponse<any[]>(usersResponse);
+
+          // Convert users to employee format
+          return users.map((user: any) => ({
+            id: user._id || user.id,
+            name: `${user.firstName} ${user.lastName}`,
+            email: user.email,
+            department: user.department || 'General'
+          }));
+        } catch (userError) {
+          console.error('Get users error:', userError);
+          console.warn('Falling back to mock employee data');
+        }
+      }
+
+      // Return mock data only if both API calls fail
       return [
         { id: 'emp1', name: 'John Smith', email: 'john.smith@example.com', department: 'IT' },
         { id: 'emp2', name: 'Jane Doe', email: 'jane.doe@example.com', department: 'HR' },
@@ -529,6 +925,236 @@ export const analyticsAPI = {
       return handleResponse(response);
     } catch (error) {
       console.error('Get system metrics error:', error);
+      throw error;
+    }
+  },
+};
+
+// Admin API
+export interface SystemSettings {
+  emailNotificationsEnabled: boolean;
+  qrCodeExpiryHours: number;
+  visitorPhotoRequired: boolean;
+  trainingRequired: boolean;
+  systemVersion: string;
+}
+
+export interface License {
+  _id: string;
+  licenseKey: string;
+  status: 'Active' | 'Expired' | 'Revoked';
+  featuresEnabled: string[];
+  expiryDate: string;
+  issuedTo: string;
+}
+
+export interface AuditLog {
+  id: string;
+  action: string;
+  userId: string;
+  timestamp: string;
+  details: Record<string, any>;
+}
+
+export const adminAPI = {
+  // Get all users
+  getUsers: async (token: string, role?: string, department?: string, isActive?: boolean, search?: string): Promise<User[]> => {
+    try {
+      let url = `${API_BASE_URL}/admin/users`;
+      const params = new URLSearchParams();
+
+      if (role) params.append('role', role);
+      if (department) params.append('department', department);
+      if (isActive !== undefined) params.append('isActive', isActive.toString());
+      if (search) params.append('search', search);
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get users error:', error);
+      throw error;
+    }
+  },
+
+  // Create user
+  createUser: async (userData: SignupData, token: string): Promise<User> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(userData),
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Create user error:', error);
+      throw error;
+    }
+  },
+
+  // Get user by ID
+  getUserById: async (userId: string, token: string): Promise<User> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get user by ID error:', error);
+      throw error;
+    }
+  },
+
+  // Update user
+  updateUser: async (userId: string, userData: Partial<User>, token: string): Promise<User> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(userData),
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Update user error:', error);
+      throw error;
+    }
+  },
+
+  // Delete user
+  deleteUser: async (userId: string, token: string): Promise<{ message: string }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Delete user error:', error);
+      throw error;
+    }
+  },
+
+  // Get system settings
+  getSystemSettings: async (token: string): Promise<SystemSettings> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/settings`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get system settings error:', error);
+      throw error;
+    }
+  },
+
+  // Update system settings
+  updateSystemSettings: async (settings: SystemSettings, token: string): Promise<{ message: string }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ settings }),
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Update system settings error:', error);
+      throw error;
+    }
+  },
+
+  // Get audit logs
+  getAuditLogs: async (token: string, startDate?: string, endDate?: string, userId?: string, action?: string): Promise<AuditLog[]> => {
+    try {
+      let url = `${API_BASE_URL}/admin/audit-logs`;
+      const params = new URLSearchParams();
+
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      if (userId) params.append('userId', userId);
+      if (action) params.append('action', action);
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get audit logs error:', error);
+      throw error;
+    }
+  },
+
+  // Get licenses
+  getLicenses: async (token: string): Promise<License[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/licenses`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get licenses error:', error);
+      throw error;
+    }
+  },
+
+  // Add license
+  addLicense: async (licenseKey: string, expiryDate: string, token: string): Promise<License> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/licenses`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ licenseKey, expiryDate }),
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Add license error:', error);
       throw error;
     }
   },

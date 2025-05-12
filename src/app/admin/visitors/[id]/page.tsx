@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/AuthContext';
-import { visitorAPI, accessControlAPI } from '@/lib/api';
-import { Visitor } from '@/lib/api';
+import { visitorAPI, Visitor } from '@/lib/api';
 import { ArrowLeft, QrCode, LogOut, Clock, BookOpen } from 'lucide-react';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
 import TrainingModule from '@/components/TrainingModule';
@@ -38,9 +37,18 @@ export default function VisitorDetails() {
       try {
         setIsLoading(true);
         const visitorId = Array.isArray(id) ? id[0] : id;
+
+        // Check if the ID is "add" - this shouldn't happen now that we have a separate page,
+        // but it's good to have this check as a fallback
+        if (visitorId === "add") {
+          router.push("/admin/visitors/add");
+          return;
+        }
+
         const data = await visitorAPI.getVisitorById(visitorId, token);
         setVisitor(data);
       } catch (err) {
+        console.error('Error fetching visitor:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch visitor details');
       } finally {
         setIsLoading(false);
@@ -48,7 +56,7 @@ export default function VisitorDetails() {
     };
 
     fetchVisitor();
-  }, [id, token]);
+  }, [id, token, router]);
 
   const handleCheckIn = async () => {
     if (!visitor || !id || !token) return;

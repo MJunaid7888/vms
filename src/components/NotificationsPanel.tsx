@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Bell, Calendar, User, Info } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
 
 interface Notification {
   id: string;
@@ -17,57 +18,87 @@ interface NotificationsPanelProps {
 }
 
 export default function NotificationsPanel({ onClose }: NotificationsPanelProps) {
-  // Mock notifications data
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      title: 'New Visitor',
-      message: 'John Doe has checked in for a meeting with you.',
-      time: '10 minutes ago',
-      type: 'info',
-      read: false
-    },
-    {
-      id: '2',
-      title: 'Training Completed',
-      message: 'Sarah Johnson has completed the safety training.',
-      time: '1 hour ago',
-      type: 'success',
-      read: false
-    },
-    {
-      id: '3',
-      title: 'Visitor Check-out',
-      message: 'Michael Smith has checked out.',
-      time: '3 hours ago',
-      type: 'info',
-      read: true
-    },
-    {
-      id: '4',
-      title: 'System Update',
-      message: 'The system will be updated tonight at 10 PM.',
-      time: '1 day ago',
-      type: 'warning',
-      read: true
-    }
-  ]);
-  
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { token } = useAuth();
+
+  // Fetch notifications from the API
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!token) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // In a real implementation, we would fetch notifications from the API
+        // For now, we'll simulate an API response with a timeout
+        setTimeout(() => {
+          // Simulated API response
+          const mockNotifications: Notification[] = [
+            {
+              id: '1',
+              title: 'New Visitor',
+              message: 'John Doe has checked in for a meeting with you.',
+              time: '10 minutes ago',
+              type: 'info',
+              read: false
+            },
+            {
+              id: '2',
+              title: 'Training Completed',
+              message: 'Sarah Johnson has completed the safety training.',
+              time: '1 hour ago',
+              type: 'success',
+              read: false
+            },
+            {
+              id: '3',
+              title: 'Visitor Check-out',
+              message: 'Michael Smith has checked out.',
+              time: '3 hours ago',
+              type: 'info',
+              read: true
+            },
+            {
+              id: '4',
+              title: 'System Update',
+              message: 'The system will be updated tonight at 10 PM.',
+              time: '1 day ago',
+              type: 'warning',
+              read: true
+            }
+          ];
+
+          setNotifications(mockNotifications);
+          setIsLoading(false);
+        }, 500);
+      } catch (err) {
+        setError('Failed to load notifications');
+        setIsLoading(false);
+        console.error('Error fetching notifications:', err);
+      }
+    };
+
+    fetchNotifications();
+  }, [token]);
+
   const markAllAsRead = () => {
     setNotifications(notifications.map(notification => ({
       ...notification,
       read: true
     })));
   };
-  
+
   const markAsRead = (id: string) => {
-    setNotifications(notifications.map(notification => 
+    setNotifications(notifications.map(notification =>
       notification.id === id ? { ...notification, read: true } : notification
     ));
   };
-  
+
   const unreadCount = notifications.filter(notification => !notification.read).length;
-  
+
   return (
     <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-lg z-50 overflow-hidden">
       <div className="p-4 border-b flex justify-between items-center">
@@ -82,14 +113,14 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
         </div>
         <div className="flex items-center">
           {unreadCount > 0 && (
-            <button 
+            <button
               onClick={markAllAsRead}
               className="text-xs text-blue-700 hover:text-blue-900 mr-3"
             >
               Mark all as read
             </button>
           )}
-          <button 
+          <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
           >
@@ -97,16 +128,25 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
           </button>
         </div>
       </div>
-      
+
       <div className="max-h-96 overflow-y-auto">
-        {notifications.length === 0 ? (
+        {isLoading ? (
+          <div className="p-4 text-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="text-gray-500 mt-2">Loading notifications...</p>
+          </div>
+        ) : error ? (
+          <div className="p-4 text-center text-red-500">
+            {error}
+          </div>
+        ) : notifications.length === 0 ? (
           <div className="p-4 text-center text-gray-500">
             No notifications
           </div>
         ) : (
           <div>
             {notifications.map(notification => (
-              <div 
+              <div
                 key={notification.id}
                 className={`p-4 border-b hover:bg-gray-50 ${!notification.read ? 'bg-blue-50' : ''}`}
                 onClick={() => markAsRead(notification.id)}
@@ -140,9 +180,17 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
           </div>
         )}
       </div>
-      
+
       <div className="p-3 border-t text-center">
-        <button className="text-sm text-blue-700 hover:text-blue-900">
+        <button
+          onClick={() => {
+            // In a real implementation, this would navigate to a notifications page
+            // For now, we'll just close the panel
+            onClose();
+            // You could also use router.push('/notifications') if you had a notifications page
+          }}
+          className="text-sm text-blue-700 hover:text-blue-900"
+        >
           View all notifications
         </button>
       </div>
