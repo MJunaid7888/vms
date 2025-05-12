@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button" // Assuming the Button component is in the src/components directory
 import { ChevronDown, Menu } from 'lucide-react';
@@ -99,12 +101,12 @@ export default function VisitorForm() {
         {/* Right side image section */}
         <div className="hidden md:flex md:w-1/2 flex-col justify-center items-center space-y-6 p-6">
           <img
-            src="/building-image.jpg"
+            src="/building.jpeg"
             alt="Building"
             className="rounded-3xl w-3/4 shadow-lg"
           />
           <img
-            src="/discussion-image.jpg"
+            src="/discussion.jpeg"
             alt="Discussion"
             className="rounded-3xl w-3/4 shadow-lg"
           />
@@ -114,12 +116,12 @@ export default function VisitorForm() {
       {/* Responsive images for small screens */}
       <div className="md:hidden w-full px-6 pt-6 space-y-4">
         <img
-          src="/building-image.jpg"
+          src="/building.jpeg"
           alt="Building"
           className="rounded-3xl w-full shadow-lg"
         />
         <img
-          src="/discussion-image.jpg"
+          src="/discussion.jpeg"
           alt="Discussion"
           className="rounded-3xl w-full shadow-lg"
         />

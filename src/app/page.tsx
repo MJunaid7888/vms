@@ -1,11 +1,17 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowUpRight, Camera } from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight, QrCode } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/lib/AuthContext";
+import QRCodeScanner from "@/components/QRCodeScanner";
+import AppBar from "@/components/AppBar";
 
 export default function Home() {
   const [languageOpen, setLanguageOpen] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const { user, token } = useAuth();
 
   // Ensure hydration consistency
   const [hydrated, setHydrated] = useState(false);
@@ -16,37 +22,20 @@ export default function Home() {
   if (!hydrated) return null;
 
   return (
-    <main className="min-h-screen bg-gradient-to-r from-white to-purple-100 px-4 py-8 md:px-12 lg:px-24 font-sans">
-      {/* Navbar */}
-      <nav className="flex flex-col md:flex-row justify-between items-center mb-12 relative">
-        <div className="text-2xl md:text-3xl font-bold text-blue-800">QuickPass</div>
-        <div className="flex flex-col md:flex-row items-center gap-4 mt-4 md:mt-0">
-          <a href="haveappoinment\page.tsx" className="text-black font-semibold">Have Appointment</a>
-          <a href="beenherebefore\page.tsx" className="text-black font-semibold">Been here Before</a>
-          <div className="relative">
-            <button
-              onClick={() => setLanguageOpen(!languageOpen)}
-              className="text-black font-medium focus:outline-none"
-            >
-              GB English ▼
-            </button>
-            {languageOpen && (
-              <ul className="absolute right-0 mt-2 w-40 bg-white border border-gray-300 rounded shadow-lg z-10">
-                <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">GB English</li>
-                <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">FR Français</li>
-                <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">ES Español</li>
-                <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">DE Deutsch</li>
-                <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">IT Italiano</li>
-                <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">ZH 中文</li>
-              </ul>
-            )}
-          </div>
-            <a href="/login/page.tsx" className="bg-blue-700 text-white px-6 py-2 rounded-full">Login</a>
-        </div>
-      </nav>
+    <main className="min-h-screen bg-gradient-to-r from-white to-purple-100 font-sans">
+      {/* QR Code Scanner */}
+      {showScanner && token && (
+        <QRCodeScanner
+          token={token}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
+
+      {/* App Bar */}
+      <AppBar />
 
       {/* Hero Section */}
-      <section className="flex flex-col-reverse lg:flex-row items-center justify-between gap-10">
+      <section className="flex flex-col-reverse lg:flex-row items-center justify-between gap-10 px-4 py-8 md:px-12 lg:px-24 mt-8">
         {/* Text Content */}
         <div className="text-center lg:text-left max-w-xl">
           <p className="text-xs font-medium tracking-widest text-purple-700 uppercase">
@@ -60,11 +49,17 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
-            <a href="/check-in/page.tsx" className="flex items-center justify-center bg-blue-800 text-white px-6 py-3 rounded-full font-semibold w-full sm:w-auto">
+            <Link
+              href="/check-in"
+              className="flex items-center justify-center bg-blue-800 text-white px-6 py-3 rounded-full font-semibold w-full sm:w-auto"
+            >
               Check-in <ArrowUpRight className="ml-2" />
-            </a>
-            <button className="flex items-center justify-center border border-blue-800 text-blue-800 px-6 py-3 rounded-full font-semibold w-full sm:w-auto">
-              Scan QR <Camera className="ml-2 w-4 h-4" />
+            </Link>
+            <button
+              className="flex items-center justify-center border border-blue-800 text-blue-800 px-6 py-3 rounded-full font-semibold w-full sm:w-auto"
+              onClick={() => setShowScanner(true)}
+            >
+              Scan QR <QrCode className="ml-2 w-4 h-4" />
             </button>
           </div>
         </div>
@@ -76,6 +71,7 @@ export default function Home() {
             alt="QR Scan"
             width={320}
             height={320}
+            style={{ width: 'auto', height: 'auto' }}
             className="rounded-xl shadow-lg"
             priority
           />
@@ -84,6 +80,7 @@ export default function Home() {
             alt="Office"
             width={320}
             height={320}
+            style={{ width: 'auto', height: 'auto' }}
             className="rounded-xl shadow-lg"
             priority
           />

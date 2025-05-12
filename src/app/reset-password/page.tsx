@@ -1,58 +1,335 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { ArrowLeft, Mail, Lock, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
+import { authAPI } from '@/lib/api';
+import AppBar from '@/components/AppBar';
 
 export default function ResetPassword() {
+  const [step, setStep] = useState<'request' | 'verify' | 'reset' | 'success'>('request');
+  const [email, setEmail] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  const handleRequestReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      // Call the forgot password API
+      const response = await authAPI.forgotPassword(email);
+
+      // Show success message and move to next step
+      setSuccessMessage(response.message || 'Reset instructions sent to your email');
+      setStep('verify');
+    } catch (err) {
+      if (err instanceof Error) {
+        if (err.message.includes('User not found')) {
+          setError('No account found with this email address');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('Failed to send reset email. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    setSuccessMessage('');
+
+    // The backend doesn't have a separate verification step
+    // The reset token is sent directly via email and used in the reset step
+    // We'll just validate that the user entered something and proceed
+
+    if (!resetToken || resetToken.trim() === '') {
+      setError('Please enter the reset token from your email');
+      setIsLoading(false);
+      return;
+    }
+
+    setSuccessMessage('Token accepted. Please set your new password.');
+    setStep('reset');
+    setIsLoading(false);
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    setSuccessMessage('');
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate password requirements as per backend validation
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      setError('Password must be at least 8 characters and contain at least one letter and one number');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // Call the reset password API
+      await authAPI.resetPassword(resetToken, password);
+
+      // Show success message and move to success step
+      setSuccessMessage('Password reset successfully');
+      setStep('success');
+    } catch (err) {
+      if (err instanceof Error) {
+        if (err.message.includes('Invalid or expired reset token')) {
+          setError('The reset token is invalid or has expired. Please request a new one.');
+        } else if (err.message.includes('Password must')) {
+          setError(err.message);
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('Failed to reset password. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-100 to-purple-200">
-      {/* Navbar */}
-      <nav className="flex flex-col sm:flex-row justify-between items-center px-6 py-4 bg-white/80 shadow-md">
-        <div className="text-2xl font-bold text-blue-900">Quick<span className="text-black">Pass</span></div>
-        <div className="flex items-center gap-4 mt-2 sm:mt-0">
-          <a href="#" className="text-black font-medium">Have Appointment</a>
-          <a href="#" className="text-black font-medium">Been here Before</a>
-          <div className="relative group">
-            <button className="font-medium text-black flex items-center gap-1">
-              <span className="font-bold">GB</span> English ▼
-            </button>
-            {/* Dropdown on hover (optional) */}
-            {/* <ul className="absolute hidden group-hover:block bg-white border mt-2 rounded shadow-lg">
-              ...
-            </ul> */}
+    <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50 to-purple-100">
+      <AppBar showAuthButtons={false} />
+
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <Link href="/login" className="inline-flex items-center text-blue-900 hover:text-blue-700 mb-8">
+          <ArrowLeft className="mr-2 h-5 w-5" />
+          Back to Login
+        </Link>
+
+        <div className="flex flex-col md:flex-row bg-white shadow-xl rounded-3xl overflow-hidden">
+          {/* Left form section */}
+          <div className="md:w-1/2 p-8 md:p-12">
+            {step === 'request' && (
+              <>
+                <h2 className="text-2xl font-bold text-blue-900 mb-2">Reset Your Password</h2>
+                <p className="text-gray-600 mb-8">Enter your email address and we'll send you a code to reset your password.</p>
+
+                {error && (
+                  <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6">
+                    <p className="font-medium">Error</p>
+                    <p className="text-sm">{error}</p>
+                  </div>
+                )}
+
+                {successMessage && (
+                  <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6">
+                    <p className="font-medium">Success</p>
+                    <p className="text-sm">{successMessage}</p>
+                  </div>
+                )}
+
+                <form onSubmit={handleRequestReset} className="space-y-6">
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="w-full pl-10 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                        placeholder="your.email@example.com"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-blue-900 text-white py-3 rounded-lg hover:bg-blue-800 transition disabled:bg-blue-300"
+                  >
+                    {isLoading ? 'Sending...' : 'Send Reset Code'}
+                  </button>
+                </form>
+              </>
+            )}
+
+            {step === 'verify' && (
+              <>
+                <h2 className="text-2xl font-bold text-blue-900 mb-2">Enter Reset Token</h2>
+                <p className="text-gray-600 mb-8">We've sent a password reset link to <span className="font-medium">{email}</span>. Please check your email and enter the reset token from the email below.</p>
+
+                {error && (
+                  <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6">
+                    <p className="font-medium">Error</p>
+                    <p className="text-sm">{error}</p>
+                  </div>
+                )}
+
+                {successMessage && (
+                  <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6">
+                    <p className="font-medium">Success</p>
+                    <p className="text-sm">{successMessage}</p>
+                  </div>
+                )}
+
+                <form onSubmit={handleVerifyCode} className="space-y-6">
+                  <div>
+                    <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-1">Reset Token</label>
+                    <input
+                      id="code"
+                      type="text"
+                      value={resetToken}
+                      onChange={(e) => setResetToken(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-center text-lg tracking-widest"
+                      placeholder="Enter reset token"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-blue-900 text-white py-3 rounded-lg hover:bg-blue-800 transition disabled:bg-blue-300"
+                  >
+                    {isLoading ? 'Verifying...' : 'Verify Code'}
+                  </button>
+
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setStep('request')}
+                      className="text-blue-700 hover:underline text-sm"
+                    >
+                      Didn't receive the email? Try again
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+
+            {step === 'reset' && (
+              <>
+                <h2 className="text-2xl font-bold text-blue-900 mb-2">Create New Password</h2>
+                <p className="text-gray-600 mb-8">Please enter your new password below.</p>
+
+                {error && (
+                  <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6">
+                    <p className="font-medium">Error</p>
+                    <p className="text-sm">{error}</p>
+                  </div>
+                )}
+
+                {successMessage && (
+                  <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6">
+                    <p className="font-medium">Success</p>
+                    <p className="text-sm">{successMessage}</p>
+                  </div>
+                )}
+
+                <form onSubmit={handleResetPassword} className="space-y-6">
+                  <div>
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Lock className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        id="password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="w-full pl-10 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                        placeholder="••••••••"
+                        minLength={8}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters with a number and special character</p>
+                  </div>
+
+                  <div>
+                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Lock className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        id="confirmPassword"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        className="w-full pl-10 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                        placeholder="••••••••"
+                        minLength={8}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-blue-900 text-white py-3 rounded-lg hover:bg-blue-800 transition disabled:bg-blue-300"
+                  >
+                    {isLoading ? 'Resetting...' : 'Reset Password'}
+                  </button>
+                </form>
+              </>
+            )}
+
+            {step === 'success' && (
+              <div className="text-center py-8">
+                <div className="flex justify-center mb-6">
+                  <CheckCircle className="h-16 w-16 text-green-500" />
+                </div>
+                <h2 className="text-2xl font-bold text-blue-900 mb-2">Password Reset Successful</h2>
+                <p className="text-gray-600 mb-8">Your password has been reset successfully. You can now log in with your new password.</p>
+                <Link
+                  href="/login"
+                  className="inline-block bg-blue-900 text-white py-3 px-6 rounded-lg hover:bg-blue-800 transition"
+                >
+                  Go to Login
+                </Link>
+              </div>
+            )}
           </div>
-          <button className="bg-blue-900 text-white px-5 py-2 rounded-full">Login</button>
-        </div>
-      </nav>
 
-      {/* Form + Image */}
-      <div className="flex flex-col md:flex-row items-center justify-center px-6 py-12 gap-8">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-lg w-full">
-          <h1 className="text-2xl sm:text-3xl font-bold text-blue-900 mb-6">Reset Password</h1>
-          <form>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              E-mail<span className="text-red-500">*</span>
-            </label>
-            <input
-              type="email"
-              required
-              placeholder="Enter your email"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          {/* Right image section */}
+          <div className="hidden md:block md:w-1/2 relative bg-blue-900">
+            <Image
+              src="/login-image.jpg"
+              alt="Reset Password Visual"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              style={{ objectFit: 'cover' }}
+              priority
             />
-            <button
-              type="submit"
-              className="bg-blue-900 text-white w-full py-3 rounded-full font-semibold hover:bg-blue-800 transition"
-            >
-              Send Password Reset Link
-            </button>
-          </form>
-        </div>
-
-        <div className="rounded-2xl overflow-hidden max-w-sm shadow-xl">
-          <Image
-            src="/password-side.jpg" // <-- Save your blurred image here
-            alt="Reset visual"
-            width={500}
-            height={400}
-            className="object-cover w-full h-full"
-          />
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-900/70 to-purple-900/70 flex items-center justify-center">
+              <div className="text-white text-center p-8 max-w-md">
+                <h3 className="text-3xl font-bold mb-4">Account Recovery</h3>
+                <p className="text-lg">Securely reset your password to regain access to your account and continue managing visitor check-ins.</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
