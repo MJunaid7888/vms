@@ -120,3 +120,46 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom animations */
+@keyframes scan {
+  0% {
+    transform: translateY(0);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateY(100%);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 0.8;
+  }
+}
+
+.animate-scan {
+  animation: scan 2s ease-in-out infinite;
+}
+
+/* Print styles for visitor badge */
+@media print {
+  body {
+    background: white;
+  }
+
+  .print:hidden {
+    display: none !important;
+  }
+
+  #visitor-badge {
+    margin: 0 auto;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    page-break-inside: avoid;
+  }
+
+  /* Hide everything except the badge when printing */
+  body > *:not(#badge-container) {
+    display: none !important;
+  }
+}

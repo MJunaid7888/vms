@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/AuthContext';
 import { visitorAPI, Visitor } from '@/lib/api';
-import { ArrowLeft, QrCode, LogOut, Clock, BookOpen } from 'lucide-react';
+import { ArrowLeft, QrCode, LogOut, Clock, BookOpen, CreditCard } from 'lucide-react';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
 import TrainingModule from '@/components/TrainingModule';
 
@@ -203,6 +203,14 @@ export default function VisitorDetails() {
                   <QrCode className="mr-2 h-5 w-5" />
                   Show QR Code
                 </button>
+
+                <Link
+                  href={`/badge/${visitor._id}`}
+                  className="flex items-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  <CreditCard className="mr-2 h-5 w-5" />
+                  View Badge
+                </Link>
 
                 <button
                   onClick={() => setShowTraining(true)}

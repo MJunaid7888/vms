@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import AppBar from '@/components/AppBar';
-import { visitorAPI, VisitorData } from '@/lib/api';
+import { visitorAPI, VisitorData, employeeAPI, Employee } from '@/lib/api';
 import { ArrowLeft, Calendar, Clock, User, Building, AlertCircle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -13,19 +13,42 @@ export default function AddVisitorPage() {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
+    phoneNumber: '',
     company: '',
     purpose: '',
-    hostEmployee: '',
+    hostEmployeeId: '',
     visitDate: new Date().toISOString().split('T')[0],
   });
-  
+
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  
+
   const { user, token } = useAuth();
   const router = useRouter();
+
+  // Fetch employees when component mounts
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      if (!token) return;
+
+      setIsLoadingEmployees(true);
+      try {
+        const employeeData = await employeeAPI.getEmployees(token);
+        setEmployees(employeeData);
+      } catch (err) {
+        console.error('Error fetching employees:', err);
+        // Don't set error state here to avoid confusing the user
+        // Just log to console and use empty array
+      } finally {
+        setIsLoadingEmployees(false);
+      }
+    };
+
+    fetchEmployees();
+  }, [token]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -34,14 +57,14 @@ export default function AddVisitorPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!token) {
       setError('You must be logged in to add a visitor');
       return;
     }
 
     // Validate form
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.purpose || !formData.hostEmployee || !formData.visitDate) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.purpose || !formData.hostEmployeeId || !formData.visitDate) {
       setError('Please fill in all required fields');
       return;
     }
@@ -57,19 +80,19 @@ export default function AddVisitorPage() {
       } as VisitorData;
 
       const result = await visitorAPI.scheduleVisit(visitorData, token);
-      
+
       setSuccessMessage('Visitor added successfully');
       setFormData({
         firstName: '',
         lastName: '',
         email: '',
-        phone: '',
+        phoneNumber: '',
         company: '',
         purpose: '',
-        hostEmployee: '',
+        hostEmployeeId: '',
         visitDate: new Date().toISOString().split('T')[0],
       });
-      
+
       // Redirect to the visitor details page after a short delay
       setTimeout(() => {
         router.push(`/admin/visitors/${result._id}`);
@@ -104,9 +127,9 @@ export default function AddVisitorPage() {
           </div>
 
           {error && (
-            <div 
-              className="m-6 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded flex items-start" 
-              role="alert" 
+            <div
+              className="m-6 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded flex items-start"
+              role="alert"
               aria-labelledby="error-heading"
             >
               <AlertCircle className="h-5 w-5 mr-2 mt-0.5" aria-hidden="true" />
@@ -118,9 +141,9 @@ export default function AddVisitorPage() {
           )}
 
           {successMessage && (
-            <div 
-              className="m-6 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded flex items-start" 
-              role="status" 
+            <div
+              className="m-6 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded flex items-start"
+              role="status"
               aria-labelledby="success-heading"
             >
               <CheckCircle className="h-5 w-5 mr-2 mt-0.5" aria-hidden="true" />
@@ -194,17 +217,19 @@ export default function AddVisitorPage() {
               </div>
 
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                  Phone
+                <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
+                  Phone <span className="text-red-500">*</span>
                 </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <input
                     type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    value={formData.phoneNumber}
                     onChange={handleChange}
+                    required
                     className="block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
+                    aria-required="true"
                   />
                 </div>
               </div>
@@ -229,23 +254,35 @@ export default function AddVisitorPage() {
               </div>
 
               <div>
-                <label htmlFor="hostEmployee" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="hostEmployeeId" className="block text-sm font-medium text-gray-700">
                   Host Employee <span className="text-red-500">*</span>
                 </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <User className="h-5 w-5 text-gray-400" aria-hidden="true" />
                   </div>
-                  <input
-                    type="text"
-                    id="hostEmployee"
-                    name="hostEmployee"
-                    value={formData.hostEmployee}
+                  <select
+                    id="hostEmployeeId"
+                    name="hostEmployeeId"
+                    value={formData.hostEmployeeId}
                     onChange={handleChange}
                     required
                     className="pl-10 block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
                     aria-required="true"
-                  />
+                    disabled={isLoadingEmployees}
+                  >
+                    <option value="">Select a host employee</option>
+                    {employees.map((employee) => (
+                      <option key={employee.id} value={employee.id}>
+                        {employee.name} - {employee.department}
+                      </option>
+                    ))}
+                  </select>
+                  {isLoadingEmployees && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+                    </div>
+                  )}
                 </div>
               </div>
 

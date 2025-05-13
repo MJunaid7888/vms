@@ -23,7 +23,8 @@ export interface VisitorData {
   email: string;
   phoneNumber: string;
   purpose: string;
-  hostEmployeeId: string;
+  hostEmployeeId: string; // This is what the API expects according to Swagger
+  hostEmployee?: string;  // This is used in some components, but should be mapped to hostEmployeeId
   company?: string;
   visitDate: string;
 }
@@ -202,13 +203,26 @@ export const authAPI = {
 export const visitorAPI = {
   scheduleVisit: async (visitorData: VisitorData, token: string): Promise<Visitor> => {
     try {
+      // Create a copy of the data to modify
+      const apiVisitorData = { ...visitorData };
+
+      // Handle the case where hostEmployee is provided but hostEmployeeId is not
+      if (!apiVisitorData.hostEmployeeId && apiVisitorData.hostEmployee) {
+        apiVisitorData.hostEmployeeId = apiVisitorData.hostEmployee;
+      }
+
+      // Remove the hostEmployee field as it's not expected by the API
+      if ('hostEmployee' in apiVisitorData) {
+        delete apiVisitorData.hostEmployee;
+      }
+
       const response = await fetch(`${API_BASE_URL}/visitors/schedule`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(visitorData),
+        body: JSON.stringify(apiVisitorData),
       });
 
       return handleResponse(response);
@@ -263,13 +277,26 @@ export const visitorAPI = {
 
   updateVisitor: async (visitorId: string, visitorData: Partial<VisitorData>, token: string): Promise<Visitor> => {
     try {
+      // Create a copy of the data to modify
+      const apiVisitorData = { ...visitorData };
+
+      // Handle the case where hostEmployee is provided but hostEmployeeId is not
+      if (!apiVisitorData.hostEmployeeId && apiVisitorData.hostEmployee) {
+        apiVisitorData.hostEmployeeId = apiVisitorData.hostEmployee;
+      }
+
+      // Remove the hostEmployee field as it's not expected by the API
+      if ('hostEmployee' in apiVisitorData) {
+        delete apiVisitorData.hostEmployee;
+      }
+
       const response = await fetch(`${API_BASE_URL}/visitors/${visitorId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(visitorData),
+        body: JSON.stringify(apiVisitorData),
       });
 
       return handleResponse(response);
@@ -314,7 +341,9 @@ export const visitorAPI = {
   // New endpoint: Get visit history
   getVisitHistory: async (token: string, startDate?: string, endDate?: string, status?: string, location?: string): Promise<Visitor[]> => {
     try {
-      let url = `${API_BASE_URL}/visitors/visits`;
+      // The correct endpoint according to Swagger is /visitors/host with query parameters
+      // NOT /visitors/visits which is causing the error
+      let url = `${API_BASE_URL}/visitors/host`;
       const params = new URLSearchParams();
 
       if (startDate) params.append('startDate', startDate);
@@ -343,17 +372,102 @@ export const visitorAPI = {
   // New endpoint: Get visit history for a specific visitor
   getVisitorHistory: async (visitorId: string, token: string): Promise<Visitor[]> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/visitors/visits/${visitorId}`, {
+      // According to Swagger, we should use the visitor ID directly
+      // NOT /visitors/visits/{visitorId} which is causing the error
+      const response = await fetch(`${API_BASE_URL}/visitors/${visitorId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
 
-      return handleResponse(response);
+      // The endpoint returns a single visitor, but we need to return an array for consistency
+      const visitor = await handleResponse<Visitor>(response);
+      return [visitor];
     } catch (error) {
       console.error('Get visitor history error:', error);
       throw error;
+    }
+  },
+
+  // Search for visitors by email
+  searchVisitorsByEmail: async (email: string, token: string): Promise<Visitor[]> => {
+    try {
+      // Try multiple approaches to find the visitor by email
+
+      // Approach 1: Try a dedicated search endpoint if it exists
+      try {
+        console.log('Trying dedicated search endpoint...');
+        const searchResponse = await fetch(`${API_BASE_URL}/visitors/search?email=${encodeURIComponent(email)}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (searchResponse.ok) {
+          const result = await handleResponse<Visitor[]>(searchResponse);
+          console.log('Search endpoint successful:', result.length, 'results found');
+          return result;
+        }
+      } catch (searchError) {
+        console.warn('Dedicated search endpoint not available, trying alternative methods');
+      }
+
+      // Approach 2: Try to get all visitors (admin access)
+      try {
+        console.log('Trying visitors endpoint...');
+        const response = await fetch(`${API_BASE_URL}/visitors`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const visitors = await handleResponse<Visitor[]>(response);
+          console.log('Visitors endpoint successful:', visitors.length, 'visitors found');
+
+          // Filter visitors by email (case-insensitive)
+          const filteredVisitors = visitors.filter(visitor =>
+            visitor.email && visitor.email.toLowerCase() === email.toLowerCase()
+          );
+
+          console.log('Filtered visitors:', filteredVisitors.length, 'results found');
+          return filteredVisitors;
+        }
+      } catch (visitorError) {
+        console.warn('Visitors endpoint failed, trying host endpoint');
+      }
+
+      // Approach 3: Try the host endpoint as a fallback
+      console.log('Trying host endpoint...');
+      const hostResponse = await fetch(`${API_BASE_URL}/visitors/host`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!hostResponse.ok) {
+        throw new Error(`Failed to fetch visitors: ${hostResponse.status} ${hostResponse.statusText}`);
+      }
+
+      const hostVisitors = await handleResponse<Visitor[]>(hostResponse);
+      console.log('Host endpoint successful:', hostVisitors.length, 'visitors found');
+
+      // Filter visitors by email (case-insensitive)
+      const filteredHostVisitors = hostVisitors.filter(visitor =>
+        visitor.email && visitor.email.toLowerCase() === email.toLowerCase()
+      );
+
+      console.log('Filtered host visitors:', filteredHostVisitors.length, 'results found');
+      return filteredHostVisitors;
+    } catch (error) {
+      console.error('Search visitors by email error:', error);
+
+      // If all API calls fail, throw an error with a descriptive message
+      throw new Error('Failed to search for visitors. Please try again later.');
     }
   },
 };
@@ -406,6 +520,24 @@ export const trainingAPI = {
       return handleResponse(response);
     } catch (error) {
       console.error('Get trainings error:', error);
+      throw error;
+    }
+  },
+
+  createTraining: async (trainingData: Partial<Training>, token: string): Promise<Training> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/training`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(trainingData),
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Create training error:', error);
       throw error;
     }
   },
@@ -779,26 +911,32 @@ export interface Employee {
 export const employeeAPI = {
   getEmployees: async (token: string): Promise<Employee[]> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/employees`, {
+      // Since there's no dedicated /employees endpoint in the API,
+      // we'll use the admin/users endpoint and filter for hosts
+      const response = await fetch(`${API_BASE_URL}/admin/users?role=host`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
 
-      return handleResponse(response);
-    } catch (error) {
-      console.error('Get employees error:', error);
+      // If the admin/users endpoint works, convert the users to employee format
+      try {
+        const users = await handleResponse<any[]>(response);
 
-      // Check if it's a network error or if the endpoint doesn't exist
-      if (error instanceof Error &&
-          (error.message.includes('Failed to fetch') ||
-           error.message.includes('404') ||
-           error.message.includes('Not Found'))) {
-        console.warn('Employee API endpoint not available, falling back to user data');
+        // Convert users to employee format
+        return users.map((user: any) => ({
+          id: user._id || user.id,
+          name: `${user.firstName} ${user.lastName}`,
+          email: user.email,
+          department: user.department || 'General'
+        }));
+      } catch (adminError) {
+        console.error('Get admin/users error:', adminError);
 
-        // Try to get users instead, which can serve as employees
+        // If admin/users fails, try the regular users endpoint
         try {
+          console.warn('Admin users endpoint failed, trying regular users endpoint');
           const usersResponse = await fetch(`${API_BASE_URL}/users`, {
             method: 'GET',
             headers: {
@@ -806,10 +944,13 @@ export const employeeAPI = {
             },
           });
 
-          const users = await handleResponse<any[]>(usersResponse);
+          const allUsers = await handleResponse<any[]>(usersResponse);
+
+          // Filter for users with host role
+          const hostUsers = allUsers.filter(user => user.role === 'host');
 
           // Convert users to employee format
-          return users.map((user: any) => ({
+          return hostUsers.map((user: any) => ({
             id: user._id || user.id,
             name: `${user.firstName} ${user.lastName}`,
             email: user.email,
@@ -817,11 +958,45 @@ export const employeeAPI = {
           }));
         } catch (userError) {
           console.error('Get users error:', userError);
-          console.warn('Falling back to mock employee data');
+          console.warn('Falling back to auth/profile as last resort');
+
+          // If all else fails, try to get the current user's profile
+          // This is a last resort and won't give a list of hosts, but at least provides one valid user
+          try {
+            const profileResponse = await fetch(`${API_BASE_URL}/auth/profile`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+              },
+            });
+
+            const profile = await handleResponse<any>(profileResponse);
+
+            return [{
+              id: profile._id || profile.id,
+              name: `${profile.firstName} ${profile.lastName}`,
+              email: profile.email,
+              department: profile.department || 'General'
+            }];
+          } catch (profileError) {
+            console.error('Get profile error:', profileError);
+            console.warn('All API attempts failed, falling back to mock employee data');
+          }
         }
       }
 
-      // Return mock data only if both API calls fail
+      // Return mock data only if all API calls fail
+      return [
+        { id: 'emp1', name: 'John Smith', email: 'john.smith@example.com', department: 'IT' },
+        { id: 'emp2', name: 'Jane Doe', email: 'jane.doe@example.com', department: 'HR' },
+        { id: 'emp3', name: 'Robert Johnson', email: 'robert.johnson@example.com', department: 'Finance' },
+        { id: 'emp4', name: 'Emily Davis', email: 'emily.davis@example.com', department: 'Marketing' },
+        { id: 'emp5', name: 'Michael Wilson', email: 'michael.wilson@example.com', department: 'Operations' }
+      ];
+    } catch (error) {
+      console.error('Get employees error:', error);
+
+      // Return mock data if the main try block fails
       return [
         { id: 'emp1', name: 'John Smith', email: 'john.smith@example.com', department: 'IT' },
         { id: 'emp2', name: 'Jane Doe', email: 'jane.doe@example.com', department: 'HR' },
@@ -955,6 +1130,8 @@ export interface AuditLog {
   timestamp: string;
   details: Record<string, any>;
 }
+
+
 
 export const adminAPI = {
   // Get all users

@@ -3,19 +3,19 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Users, 
-  FileText, 
-  Settings, 
-  BookOpen, 
-  Bell, 
-  BarChart, 
-  Shield, 
-  Menu, 
-  X, 
-  ChevronDown, 
-  ChevronRight 
+import {
+  LayoutDashboard,
+  Users,
+  FileText,
+  Settings,
+  BookOpen,
+  Bell,
+  BarChart,
+  Shield,
+  Menu,
+  X,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 
 interface NavItem {
@@ -43,11 +43,11 @@ export default function AdminSidebar() {
     const handleClickOutside = (event: MouseEvent) => {
       const sidebar = document.getElementById('admin-sidebar');
       const toggle = document.getElementById('sidebar-toggle');
-      
-      if (isOpen && 
-          sidebar && 
-          toggle && 
-          !sidebar.contains(event.target as Node) && 
+
+      if (isOpen &&
+          sidebar &&
+          toggle &&
+          !sidebar.contains(event.target as Node) &&
           !toggle.contains(event.target as Node)) {
         setIsOpen(false);
       }
@@ -110,6 +110,11 @@ export default function AdminSidebar() {
       title: 'Analytics',
       href: '/admin/analytics',
       icon: <BarChart className="h-5 w-5" />,
+    },
+    {
+      title: 'Users',
+      href: '/admin/users',
+      icon: <Users className="h-5 w-5" />,
     },
     {
       title: 'Settings',
@@ -254,8 +259,8 @@ export default function AdminSidebar() {
 
       {/* Overlay for mobile */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 bg-gray-600 bg-opacity-50 z-20 lg:hidden" 
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 z-20 lg:hidden"
           aria-hidden="true"
           onClick={() => setIsOpen(false)}
         />

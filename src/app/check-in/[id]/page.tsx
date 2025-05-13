@@ -13,15 +13,15 @@ export default function VisitorCheckIn() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [checkingIn, setCheckingIn] = useState(false);
-  
+
   const { id } = useParams();
   const { token } = useAuth();
   const router = useRouter();
-  
+
   useEffect(() => {
     const fetchVisitor = async () => {
       if (!id) return;
-      
+
       try {
         setIsLoading(true);
         const visitorId = Array.isArray(id) ? id[0] : id;
@@ -33,47 +33,47 @@ export default function VisitorCheckIn() {
         setIsLoading(false);
       }
     };
-    
+
     fetchVisitor();
   }, [id, token]);
-  
+
   const handleCheckIn = async () => {
     if (!visitor || !id) return;
-    
+
     try {
       setCheckingIn(true);
       const visitorId = Array.isArray(id) ? id[0] : id;
       await visitorAPI.checkInVisitor(visitorId, token || '');
-      setSuccess('Check-in successful!');
-      
+      setSuccess('Check-in successful! Generating your digital visitor badge...');
+
       // Update visitor status locally
       setVisitor(prev => prev ? {
         ...prev,
         status: 'checked-in',
         checkInTime: new Date().toISOString()
       } : null);
-      
-      // Redirect after 2 seconds
+
+      // Redirect to badge page after 1 second
       setTimeout(() => {
-        router.push('/');
-      }, 2000);
+        router.push(`/badge/${visitorId}`);
+      }, 1000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to check in');
     } finally {
       setCheckingIn(false);
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-indigo-100 to-purple-100 px-4 py-6">
       {/* Navbar */}
       <nav className="flex flex-col md:flex-row justify-between items-center mb-8 relative z-20">
         <Link href="/" className="text-2xl md:text-3xl font-bold text-blue-800">QuickPass</Link>
       </nav>
-      
+
       <div className="bg-white rounded-3xl shadow-lg p-6 md:p-10 w-full max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold text-blue-900 mb-6">Visitor Check-In</h1>
-        
+
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -83,9 +83,19 @@ export default function VisitorCheckIn() {
             {error}
           </div>
         ) : success ? (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-            {success}
-            <p className="mt-2">Redirecting to home page...</p>
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-4">
+            <div className="flex items-center">
+              <div className="mr-3">
+                <svg className="animate-spin h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              <div>
+                <p className="font-medium">{success}</p>
+                <p className="text-sm mt-1">Redirecting to your digital badge...</p>
+              </div>
+            </div>
           </div>
         ) : visitor ? (
           <div>
@@ -119,9 +129,9 @@ export default function VisitorCheckIn() {
                 <div>
                   <p className="text-sm text-gray-500">Status</p>
                   <p className="font-medium">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                      ${visitor.status === 'checked-in' ? 'bg-green-100 text-green-800' : 
-                        visitor.status === 'checked-out' ? 'bg-gray-100 text-gray-800' : 
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                      ${visitor.status === 'checked-in' ? 'bg-green-100 text-green-800' :
+                        visitor.status === 'checked-out' ? 'bg-gray-100 text-gray-800' :
                         visitor.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
                         'bg-red-100 text-red-800'}`}>
                       {visitor.status}
@@ -130,7 +140,7 @@ export default function VisitorCheckIn() {
                 </div>
               </div>
             </div>
-            
+
             {visitor.status === 'scheduled' ? (
               <div className="flex justify-end">
                 <button
@@ -156,9 +166,9 @@ export default function VisitorCheckIn() {
             No visitor information found.
           </div>
         )}
-        
+
         <div className="mt-6">
-          <Link 
+          <Link
             href="/"
             className="text-blue-900 hover:underline"
           >

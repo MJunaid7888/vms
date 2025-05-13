@@ -43,14 +43,17 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
   };
 
   return (
-    <nav className="bg-white shadow-sm sticky top-0 z-50">
+    <nav className="bg-white shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo and primary navigation */}
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link href="/" className="text-2xl font-bold text-blue-800">
-                QuickPass
+              <Link href="/" className="flex items-center">
+                <div className="bg-blue-700 text-white p-1.5 rounded mr-2">
+                  <Shield className="h-5 w-5" />
+                </div>
+                <span className="text-2xl font-bold text-blue-800">QuickPass</span>
               </Link>
             </div>
 
@@ -58,38 +61,50 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
             <div className="hidden sm:ml-10 sm:flex sm:space-x-8">
               <Link
                 href="/"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-md ${
                   isActive('/')
-                    ? 'border-blue-700 text-blue-700'
-                    : 'border-transparent text-gray-700 hover:text-blue-700 hover:border-blue-300'
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-gray-700 hover:text-blue-700 hover:bg-blue-50'
                 }`}
               >
-                <Home className="mr-1 h-4 w-4" />
+                <Home className="mr-1.5 h-4 w-4" />
                 Home
               </Link>
 
               <Link
                 href="/check-in"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-md ${
                   isActive('/check-in')
-                    ? 'border-blue-700 text-blue-700'
-                    : 'border-transparent text-gray-700 hover:text-blue-700 hover:border-blue-300'
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-gray-700 hover:text-blue-700 hover:bg-blue-50'
                 }`}
               >
-                <UserPlus className="mr-1 h-4 w-4" />
+                <UserPlus className="mr-1.5 h-4 w-4" />
                 New Visitor
               </Link>
 
               <Link
-                href="/beenherebefore"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/beenherebefore')
-                    ? 'border-blue-700 text-blue-700'
-                    : 'border-transparent text-gray-700 hover:text-blue-700 hover:border-blue-300'
+                href="/been-here-before"
+                className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-md ${
+                  isActive('/been-here-before')
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-gray-700 hover:text-blue-700 hover:bg-blue-50'
                 }`}
               >
-                <User className="mr-1 h-4 w-4" />
+                <User className="mr-1.5 h-4 w-4" />
                 Return Visitor
+              </Link>
+
+              <Link
+                href="/check-out"
+                className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-md ${
+                  isActive('/check-out')
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-gray-700 hover:text-blue-700 hover:bg-blue-50'
+                }`}
+              >
+                <LogOut className="mr-1.5 h-4 w-4" />
+                Check Out
               </Link>
             </div>
           </div>
@@ -127,10 +142,10 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
                   <div className="relative">
                     <button
                       onClick={() => setUserMenuOpen(!userMenuOpen)}
-                      className="flex items-center space-x-2 bg-blue-50 text-blue-800 px-4 py-2 rounded-lg hover:bg-blue-100"
+                      className="flex items-center space-x-2 bg-blue-50 text-blue-800 px-4 py-2 rounded-lg hover:bg-blue-100 border border-blue-100 shadow-sm transition-all"
                     >
-                      <div className="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center">
-                        <User className="h-4 w-4" />
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white">
+                        {user.firstName?.charAt(0)}{user.lastName?.charAt(0) || ''}
                       </div>
                       <span className="font-medium">{user.firstName || 'User'}</span>
                       <ChevronDown className="w-4 h-4" />
@@ -244,13 +259,13 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
                   <div className="flex items-center space-x-3">
                     <Link
                       href="/login"
-                      className="text-blue-700 hover:text-blue-800 px-3 py-2 rounded-md text-sm font-medium"
+                      className="text-blue-700 hover:text-blue-800 px-4 py-2 rounded-md text-sm font-medium border border-transparent hover:border-blue-200 hover:bg-blue-50 transition-all"
                     >
                       Login
                     </Link>
                     <Link
                       href="/signup"
-                      className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow transition-colors text-sm font-medium"
+                      className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow-sm hover:shadow transition-all text-sm font-medium"
                     >
                       Sign Up
                     </Link>
@@ -279,39 +294,54 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
       {/* Mobile menu */}
       {menuOpen && (
         <div className="sm:hidden">
-          <div className="pt-2 pb-3 space-y-1">
+          <div className="pt-2 pb-3 space-y-1 px-2">
             <Link
               href="/"
-              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+              className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${
                 isActive('/')
-                  ? 'border-blue-700 text-blue-700 bg-blue-50'
-                  : 'border-transparent text-gray-700 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'
               }`}
               onClick={() => setMenuOpen(false)}
             >
+              <Home className="mr-3 h-5 w-5" />
               Home
             </Link>
             <Link
               href="/check-in"
-              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+              className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${
                 isActive('/check-in')
-                  ? 'border-blue-700 text-blue-700 bg-blue-50'
-                  : 'border-transparent text-gray-700 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'
               }`}
               onClick={() => setMenuOpen(false)}
             >
+              <UserPlus className="mr-3 h-5 w-5" />
               New Visitor
             </Link>
             <Link
-              href="/beenherebefore"
-              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                isActive('/beenherebefore')
-                  ? 'border-blue-700 text-blue-700 bg-blue-50'
-                  : 'border-transparent text-gray-700 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900'
+              href="/been-here-before"
+              className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${
+                isActive('/been-here-before')
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'
               }`}
               onClick={() => setMenuOpen(false)}
             >
+              <User className="mr-3 h-5 w-5" />
               Return Visitor
+            </Link>
+            <Link
+              href="/check-out"
+              className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${
+                isActive('/check-out')
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'
+              }`}
+              onClick={() => setMenuOpen(false)}
+            >
+              <LogOut className="mr-3 h-5 w-5" />
+              Check Out
             </Link>
           </div>
 
@@ -320,8 +350,8 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
               <>
                 <div className="flex items-center px-4">
                   <div className="flex-shrink-0">
-                    <div className="h-10 w-10 rounded-full bg-blue-200 flex items-center justify-center">
-                      <User className="h-6 w-6 text-blue-800" />
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-medium">
+                      {user.firstName?.charAt(0)}{user.lastName?.charAt(0) || ''}
                     </div>
                   </div>
                   <div className="ml-3">
@@ -430,19 +460,21 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
                 </div>
               </>
             ) : (
-              <div className="mt-3 space-y-1 px-2">
+              <div className="mt-3 space-y-2 px-2">
                 <Link
                   href="/login"
-                  className="block px-3 py-2 rounded-md text-base font-medium text-blue-700 hover:bg-blue-50"
+                  className="flex items-center px-3 py-2 rounded-md text-base font-medium text-blue-700 hover:bg-blue-50 border border-blue-100"
                   onClick={() => setMenuOpen(false)}
                 >
+                  <User className="mr-3 h-5 w-5" />
                   Login
                 </Link>
                 <Link
                   href="/signup"
-                  className="block px-3 py-2 rounded-md text-base font-medium bg-blue-900 text-white hover:bg-blue-800"
+                  className="flex items-center px-3 py-2 rounded-md text-base font-medium bg-blue-700 text-white hover:bg-blue-800"
                   onClick={() => setMenuOpen(false)}
                 >
+                  <UserPlus className="mr-3 h-5 w-5" />
                   Sign Up
                 </Link>
               </div>
