@@ -61,6 +61,14 @@ export default function ResetPassword() {
       return;
     }
 
+    // Add a basic format validation for the token
+    // Typically, reset tokens are long strings with specific formats
+    if (resetToken.length < 10) {
+      setError('The reset token appears to be invalid. Please check your email and try again.');
+      setIsLoading(false);
+      return;
+    }
+
     setSuccessMessage('Token accepted. Please set your new password.');
     setStep('reset');
     setIsLoading(false);
@@ -115,7 +123,7 @@ export default function ResetPassword() {
       <AppBar showAuthButtons={false} />
 
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <Link href="/login" className="inline-flex items-center text-blue-900 hover:text-blue-700 mb-8">
+        <Link href="/login" className="inline-flex items-center text-blue-900 hover:text-blue-700 mb-8 transition-colors">
           <ArrowLeft className="mr-2 h-5 w-5" />
           Back to Login
         </Link>
@@ -129,14 +137,14 @@ export default function ResetPassword() {
                 <p className="text-gray-600 mb-8">Enter your email address and we'll send you a code to reset your password.</p>
 
                 {error && (
-                  <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6">
+                  <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 animate-fadeIn">
                     <p className="font-medium">Error</p>
                     <p className="text-sm">{error}</p>
                   </div>
                 )}
 
                 {successMessage && (
-                  <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6">
+                  <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6 animate-fadeIn">
                     <p className="font-medium">Success</p>
                     <p className="text-sm">{successMessage}</p>
                   </div>
@@ -155,16 +163,18 @@ export default function ResetPassword() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        className="w-full pl-10 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                        className="w-full pl-10 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 transition-colors"
                         placeholder="your.email@example.com"
+                        autoComplete="email"
                       />
                     </div>
+                    <p className="text-xs text-gray-500 mt-1">Enter the email address associated with your account</p>
                   </div>
 
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-blue-900 text-white py-3 rounded-lg hover:bg-blue-800 transition disabled:bg-blue-300"
+                    className="w-full bg-blue-900 text-white py-3 rounded-lg hover:bg-blue-800 transition-colors disabled:bg-blue-300 shadow-sm hover:shadow"
                   >
                     {isLoading ? 'Sending...' : 'Send Reset Code'}
                   </button>
@@ -178,14 +188,14 @@ export default function ResetPassword() {
                 <p className="text-gray-600 mb-8">We've sent a password reset link to <span className="font-medium">{email}</span>. Please check your email and enter the reset token from the email below.</p>
 
                 {error && (
-                  <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6">
+                  <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 animate-fadeIn">
                     <p className="font-medium">Error</p>
                     <p className="text-sm">{error}</p>
                   </div>
                 )}
 
                 {successMessage && (
-                  <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6">
+                  <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6 animate-fadeIn">
                     <p className="font-medium">Success</p>
                     <p className="text-sm">{successMessage}</p>
                   </div>
@@ -200,27 +210,33 @@ export default function ResetPassword() {
                       value={resetToken}
                       onChange={(e) => setResetToken(e.target.value)}
                       required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-center text-lg tracking-widest"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-center text-lg tracking-widest transition-colors"
                       placeholder="Enter reset token"
+                      autoComplete="off"
                     />
+                    <p className="text-xs text-gray-500 mt-1">The token is case-sensitive and should be entered exactly as shown in the email</p>
                   </div>
 
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-blue-900 text-white py-3 rounded-lg hover:bg-blue-800 transition disabled:bg-blue-300"
+                    className="w-full bg-blue-900 text-white py-3 rounded-lg hover:bg-blue-800 transition-colors disabled:bg-blue-300 shadow-sm hover:shadow"
                   >
                     {isLoading ? 'Verifying...' : 'Verify Code'}
                   </button>
 
-                  <div className="text-center">
+                  <div className="text-center mt-4 p-4 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-800 mb-2">Didn't receive the email?</p>
                     <button
                       type="button"
                       onClick={() => setStep('request')}
-                      className="text-blue-700 hover:underline text-sm"
+                      className="text-blue-700 hover:text-blue-900 text-sm font-medium transition-colors"
                     >
-                      Didn't receive the email? Try again
+                      Try again with a different email
                     </button>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Please also check your spam or junk folder. The email should arrive within a few minutes.
+                    </p>
                   </div>
                 </form>
               </>
@@ -232,14 +248,14 @@ export default function ResetPassword() {
                 <p className="text-gray-600 mb-8">Please enter your new password below.</p>
 
                 {error && (
-                  <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6">
+                  <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 animate-fadeIn">
                     <p className="font-medium">Error</p>
                     <p className="text-sm">{error}</p>
                   </div>
                 )}
 
                 {successMessage && (
-                  <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6">
+                  <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6 animate-fadeIn">
                     <p className="font-medium">Success</p>
                     <p className="text-sm">{successMessage}</p>
                   </div>
@@ -258,12 +274,20 @@ export default function ResetPassword() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        className="w-full pl-10 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                        className="w-full pl-10 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 transition-colors"
                         placeholder="••••••••"
                         minLength={8}
+                        autoComplete="new-password"
                       />
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters with a number and special character</p>
+                    <div className="mt-2 text-xs">
+                      <p className="text-gray-500">Password requirements:</p>
+                      <ul className="list-disc pl-5 text-gray-500 space-y-1 mt-1">
+                        <li className={password.length >= 8 ? "text-green-600" : ""}>At least 8 characters long</li>
+                        <li className={/[A-Za-z]/.test(password) ? "text-green-600" : ""}>At least one letter</li>
+                        <li className={/\d/.test(password) ? "text-green-600" : ""}>At least one number</li>
+                      </ul>
+                    </div>
                   </div>
 
                   <div>
@@ -278,17 +302,25 @@ export default function ResetPassword() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         required
-                        className="w-full pl-10 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                        className={`w-full pl-10 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 transition-colors ${
+                          confirmPassword && password !== confirmPassword
+                            ? "border-red-300 bg-red-50"
+                            : "border-gray-300"
+                        }`}
                         placeholder="••••••••"
                         minLength={8}
+                        autoComplete="new-password"
                       />
                     </div>
+                    {confirmPassword && password !== confirmPassword && (
+                      <p className="text-xs text-red-600 mt-1">Passwords do not match</p>
+                    )}
                   </div>
 
                   <button
                     type="submit"
-                    disabled={isLoading}
-                    className="w-full bg-blue-900 text-white py-3 rounded-lg hover:bg-blue-800 transition disabled:bg-blue-300"
+                    disabled={isLoading || (password !== confirmPassword) || password.length < 8}
+                    className="w-full bg-blue-900 text-white py-3 rounded-lg hover:bg-blue-800 transition-colors disabled:bg-blue-300 shadow-sm hover:shadow"
                   >
                     {isLoading ? 'Resetting...' : 'Reset Password'}
                   </button>
@@ -299,16 +331,26 @@ export default function ResetPassword() {
             {step === 'success' && (
               <div className="text-center py-8">
                 <div className="flex justify-center mb-6">
-                  <CheckCircle className="h-16 w-16 text-green-500" />
+                  <div className="bg-green-100 p-4 rounded-full">
+                    <CheckCircle className="h-16 w-16 text-green-500" />
+                  </div>
                 </div>
                 <h2 className="text-2xl font-bold text-blue-900 mb-2">Password Reset Successful</h2>
                 <p className="text-gray-600 mb-8">Your password has been reset successfully. You can now log in with your new password.</p>
-                <Link
-                  href="/login"
-                  className="inline-block bg-blue-900 text-white py-3 px-6 rounded-lg hover:bg-blue-800 transition"
-                >
-                  Go to Login
-                </Link>
+                <div className="flex flex-col items-center space-y-4">
+                  <Link
+                    href="/login"
+                    className="inline-block bg-blue-900 text-white py-3 px-8 rounded-lg hover:bg-blue-800 transition-colors shadow-sm hover:shadow"
+                  >
+                    Go to Login
+                  </Link>
+                  <Link
+                    href="/"
+                    className="inline-block text-blue-700 hover:text-blue-900 transition-colors"
+                  >
+                    Return to Home
+                  </Link>
+                </div>
               </div>
             )}
           </div>

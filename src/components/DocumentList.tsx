@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { documentAPI, Document } from '@/lib/api';
-import { File, FileText, Download, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
+import { File, FileText, Download, Trash2, AlertCircle, CheckCircle, Search } from 'lucide-react';
 
 interface DocumentListProps {
   visitorId: string;
@@ -12,15 +12,32 @@ interface DocumentListProps {
 
 export default function DocumentList({ visitorId, onDocumentDeleted }: DocumentListProps) {
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const { token } = useAuth();
 
   useEffect(() => {
     fetchDocuments();
   }, [visitorId, token]);
+
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredDocuments(documents);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = documents.filter(
+        (doc) =>
+          (doc.fileName && doc.fileName.toLowerCase().includes(query)) ||
+          (doc.documentType && doc.documentType.toLowerCase().includes(query)) ||
+          (doc.description && doc.description.toLowerCase().includes(query))
+      );
+      setFilteredDocuments(filtered);
+    }
+  }, [searchQuery, documents]);
 
   const fetchDocuments = async () => {
     if (!token) return;
@@ -31,6 +48,7 @@ export default function DocumentList({ visitorId, onDocumentDeleted }: DocumentL
     try {
       const docs = await documentAPI.getVisitorDocuments(visitorId, token);
       setDocuments(docs);
+      setFilteredDocuments(docs);
     } catch (err) {
       console.error('Error fetching documents:', err);
       setError(err instanceof Error ? err.message : 'Failed to load documents');
@@ -50,7 +68,7 @@ export default function DocumentList({ visitorId, onDocumentDeleted }: DocumentL
       await documentAPI.deleteDocument(documentId, token);
       setDocuments((prevDocs) => prevDocs.filter((doc) => doc._id !== documentId));
       setSuccessMessage('Document deleted successfully');
-      
+
       if (onDocumentDeleted) {
         onDocumentDeleted();
       }
@@ -103,6 +121,28 @@ export default function DocumentList({ visitorId, onDocumentDeleted }: DocumentL
 
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden">
+      <div className="p-4 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+            <FileText className="h-5 w-5 text-blue-600 mr-2" />
+            Documents
+          </h2>
+          <div className="mt-4 sm:mt-0 relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" aria-hidden="true" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search documents..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              aria-label="Search documents"
+            />
+          </div>
+        </div>
+      </div>
+
       {error && (
         <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 m-4 rounded flex items-start">
           <AlertCircle className="h-5 w-5 mr-2 mt-0.5" />
@@ -123,11 +163,13 @@ export default function DocumentList({ visitorId, onDocumentDeleted }: DocumentL
         </div>
       )}
 
-      {documents.length === 0 ? (
+      {filteredDocuments.length === 0 ? (
         <div className="p-8 text-center">
           <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900">No documents found</h3>
-          <p className="text-gray-500 mt-1">This visitor has no uploaded documents.</p>
+          <p className="text-gray-500 mt-1">
+            {searchQuery ? 'Try adjusting your search criteria.' : 'This visitor has no uploaded documents.'}
+          </p>
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -167,7 +209,7 @@ export default function DocumentList({ visitorId, onDocumentDeleted }: DocumentL
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {documents.map((doc) => (
+              {filteredDocuments.map((doc) => (
                 <tr key={doc._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">

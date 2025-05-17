@@ -84,7 +84,7 @@ export default function Home() {
                 A comprehensive solution for managing visitors, security compliance, and access control with digital passes.
               </p>
 
-              <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4 mb-8">
+              <div className="flex flex-col flex-wrap sm:flex-row justify-center lg:justify-start gap-4 mb-8">
                 <Link
                   href="/check-in"
                   className="flex items-center justify-center bg-blue-700 hover:bg-blue-800 text-white px-8 py-4 rounded-lg font-semibold w-full sm:w-auto transition-all shadow-md hover:shadow-lg"

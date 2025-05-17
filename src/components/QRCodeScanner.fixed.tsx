@@ -127,12 +127,9 @@ export default function QRCodeScanner({ token, onClose }: QRCodeScannerProps) {
 
       if (token) {
         try {
-           console.log('API response qrData:', qrData);
-          console.log('API response qrData:', token);
           // Validate QR code with backend
           const response = await accessControlAPI.validateQrCode(qrData, token);
 
-    
           // Handle the response based on its format
           if (response && typeof response === 'object') {
             // Extract visitor ID from various possible response formats

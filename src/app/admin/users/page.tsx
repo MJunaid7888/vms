@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import AppBar from '@/components/AppBar';
 import { adminAPI, User } from '@/lib/api';
 import { Users, Search, AlertCircle, CheckCircle, XCircle, Edit, Trash2, Plus, Filter } from 'lucide-react';
 import Link from 'next/link';
@@ -39,7 +38,7 @@ export default function UsersPage() {
     } catch (err) {
       console.error('Error fetching users:', err);
       setError(err instanceof Error ? err.message : 'Failed to load users');
-      
+
       // Create mock data as fallback
       const mockUsers = createMockUsers();
       setUsers(mockUsers);
@@ -174,38 +173,26 @@ export default function UsersPage() {
   };
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <AppBar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="bg-white shadow-md rounded-lg p-6 text-center">
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-            <p className="text-gray-600">Please log in to access this page.</p>
-          </div>
-        </div>
-      </div>
-    );
+    return null; // Layout will handle unauthorized access
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AppBar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-            <p className="mt-2 text-gray-600">
-              View, edit, and manage system users.
-            </p>
-          </div>
-          <Link
-            href="/admin/users/add"
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add User
-          </Link>
+    <>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+          <p className="mt-2 text-gray-600">
+            View, edit, and manage system users.
+          </p>
         </div>
+        <Link
+          href="/admin/users/add"
+          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add User
+        </Link>
+      </div>
 
         {error && (
           <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 flex items-start">
@@ -377,7 +364,6 @@ export default function UsersPage() {
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </>
   );
 }

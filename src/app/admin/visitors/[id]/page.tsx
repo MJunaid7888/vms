@@ -5,9 +5,11 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/AuthContext';
 import { visitorAPI, Visitor } from '@/lib/api';
-import { ArrowLeft, QrCode, LogOut, Clock, BookOpen, CreditCard } from 'lucide-react';
+import { ArrowLeft, QrCode, LogOut, Clock, BookOpen, CreditCard, FileText } from 'lucide-react';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
-import TrainingModule from '@/components/TrainingModule';
+import EnhancedTrainingModule from '@/components/EnhancedTrainingModule';
+import DocumentUploader from '@/components/DocumentUploader';
+import EnhancedDocumentViewer from '@/components/EnhancedDocumentViewer';
 
 export default function VisitorDetails() {
   const [visitor, setVisitor] = useState<Visitor | null>(null);
@@ -18,6 +20,8 @@ export default function VisitorDetails() {
   const [showTraining, setShowTraining] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [showDocuments, setShowDocuments] = useState(false);
+  const [documentsUpdated, setDocumentsUpdated] = useState(0);
 
   const { id } = useParams();
   const { user, token, logout } = useAuth();
@@ -110,6 +114,12 @@ export default function VisitorDetails() {
     }
   };
 
+  const handleDocumentChange = () => {
+    // Increment to trigger a re-render of the DocumentList component
+    setDocumentsUpdated(prev => prev + 1);
+    setSuccess('Document operation completed successfully');
+  };
+
   if (!user || !token) {
     return null; // Will redirect in useEffect
   }
@@ -127,7 +137,7 @@ export default function VisitorDetails() {
 
       {/* Training Modal */}
       {showTraining && visitor && token && (
-        <TrainingModule
+        <EnhancedTrainingModule
           visitorId={visitor._id}
           token={token}
           onComplete={(passed) => {
@@ -220,6 +230,14 @@ export default function VisitorDetails() {
                   {visitor.trainingCompleted ? 'Training Completed' : 'Take Safety Training'}
                 </button>
 
+                <button
+                  onClick={() => setShowDocuments(!showDocuments)}
+                  className="flex items-center bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+                >
+                  <FileText className="mr-2 h-5 w-5" />
+                  {showDocuments ? 'Hide Documents' : 'Manage Documents'}
+                </button>
+
                 {visitor.status === 'scheduled' && (
                   <button
                     onClick={handleCheckIn}
@@ -243,6 +261,30 @@ export default function VisitorDetails() {
                   </button>
                 )}
               </div>
+
+              {/* Document Management Section */}
+              {showDocuments && (
+                <div className="mt-8 space-y-6">
+                  <div className="border-t border-gray-200 pt-6">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                      <FileText className="h-5 w-5 text-purple-600 mr-2" />
+                      Document Management
+                    </h2>
+
+                    <div className="space-y-6">
+                      <DocumentUploader
+                        visitorId={visitor._id}
+                        onUploadSuccess={handleDocumentChange}
+                      />
+
+                      <EnhancedDocumentViewer
+                        visitorId={visitor._id}
+                        onDocumentDeleted={handleDocumentChange}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="p-6">

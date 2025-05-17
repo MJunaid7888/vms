@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import AppBar from '@/components/AppBar';
 import { visitorAPI, Visitor } from '@/lib/api';
 import { Users, Search, AlertCircle, CheckCircle, XCircle, Eye, FileText } from 'lucide-react';
 import Link from 'next/link';
@@ -68,16 +67,16 @@ export default function VisitorsPage() {
 
     try {
       await visitorAPI.checkOutVisitor(visitorId, token);
-      
+
       // Update local state
-      setVisitors(prev => 
-        prev.map(visitor => 
-          visitor._id === visitorId 
-            ? { ...visitor, status: 'checked-out', checkOutTime: new Date().toISOString() } 
+      setVisitors(prev =>
+        prev.map(visitor =>
+          visitor._id === visitorId
+            ? { ...visitor, status: 'checked-out', checkOutTime: new Date().toISOString() }
             : visitor
         )
       );
-      
+
       setSuccessMessage('Visitor checked out successfully');
     } catch (err) {
       console.error('Error checking out visitor:', err);
@@ -141,31 +140,29 @@ export default function VisitorsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AppBar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Visitors</h1>
-            <p className="mt-2 text-gray-600">
-              Manage all visitors and their check-in/check-out status
-            </p>
-          </div>
-          <div className="mt-4 sm:mt-0">
-            <Link
-              href="/admin/visitors/add"
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <Users className="mr-2 h-4 w-4" aria-hidden="true" />
-              Add New Visitor
-            </Link>
-          </div>
+    <>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Visitors</h1>
+          <p className="mt-2 text-gray-600">
+            Manage all visitors and their check-in/check-out status
+          </p>
         </div>
+        <div className="mt-4 sm:mt-0">
+          <Link
+            href="/admin/visitors/add"
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <Users className="mr-2 h-4 w-4" aria-hidden="true" />
+            Add New Visitor
+          </Link>
+        </div>
+      </div>
 
         {error && (
-          <div 
-            className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 flex items-start" 
-            role="alert" 
+          <div
+            className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 flex items-start"
+            role="alert"
             aria-labelledby="error-heading"
           >
             <AlertCircle className="h-5 w-5 mr-2 mt-0.5" aria-hidden="true" />
@@ -177,9 +174,9 @@ export default function VisitorsPage() {
         )}
 
         {successMessage && (
-          <div 
-            className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6 flex items-start" 
-            role="status" 
+          <div
+            className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6 flex items-start"
+            role="status"
             aria-labelledby="success-heading"
           >
             <CheckCircle className="h-5 w-5 mr-2 mt-0.5" aria-hidden="true" />
@@ -348,19 +345,19 @@ export default function VisitorsPage() {
                           <span className="ml-1 capitalize">{visitor.status}</span>
                         </span>
                       </div>
-                      
+
                       <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
                         <div>
                           <span className="font-medium text-gray-500">Host:</span>
                           <div className="mt-1 text-gray-900">{visitor.hostEmployee || '—'}</div>
                         </div>
-                        
+
                         <div>
                           <span className="font-medium text-gray-500">Visit Date:</span>
                           <div className="mt-1 text-gray-900">{formatDate(visitor.visitDate)}</div>
                         </div>
                       </div>
-                      
+
                       <div className="mt-3 flex justify-between items-center">
                         <div className="flex space-x-4">
                           <Link
@@ -380,7 +377,7 @@ export default function VisitorsPage() {
                             <span>Docs</span>
                           </Link>
                         </div>
-                        
+
                         {visitor.status === 'checked-in' && (
                           <button
                             onClick={() => handleCheckOut(visitor._id)}
@@ -409,7 +406,6 @@ export default function VisitorsPage() {
             </>
           )}
         </div>
-      </div>
-    </div>
+    </>
   );
 }

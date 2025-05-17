@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import AppBar from '@/components/AppBar';
 import SystemSettings from '@/components/SystemSettings';
 import NotificationSettings from '@/components/NotificationSettings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,29 +13,17 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('system');
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <AppBar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="bg-white shadow-md rounded-lg p-6 text-center">
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-            <p className="text-gray-600">Please log in to access this page.</p>
-          </div>
-        </div>
-      </div>
-    );
+    return null; // Layout will handle unauthorized access
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AppBar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">System Administration</h1>
-          <p className="mt-2 text-gray-600">
-            Manage system settings, notifications, and other administrative functions.
-          </p>
-        </div>
+    <>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">System Administration</h1>
+        <p className="mt-2 text-gray-600">
+          Manage system settings, notifications, and other administrative functions.
+        </p>
+      </div>
 
         <Tabs defaultValue="system" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-white p-1 shadow-sm rounded-lg border border-gray-200">
@@ -116,7 +103,6 @@ export default function SettingsPage() {
             </div>
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
+    </>
   );
 }

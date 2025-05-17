@@ -68,7 +68,7 @@ export interface ApiResponse<T> {
 // Helper function to handle API responses
 const handleResponse = async <T>(response: Response): Promise<T> => {
   const data = await response.json();
-
+  console.log("API Response", data)
   if (!response.ok) {
     const errorMessage = data.message || 'An error occurred';
     throw new Error(errorMessage);
@@ -252,6 +252,7 @@ export const visitorAPI = {
         },
       });
 
+
       return handleResponse(response);
     } catch (error) {
       console.error('Get visitors by host error:', error);
@@ -393,55 +394,53 @@ export const visitorAPI = {
   // Search for visitors by email
   searchVisitorsByEmail: async (email: string, token: string): Promise<Visitor[]> => {
     try {
-      // Try multiple approaches to find the visitor by email
+      // Check if the token is provided
+      if (!token) {
+        throw new Error('Authentication token is required');
+      }
 
-      // Approach 1: Try a dedicated search endpoint if it exists
+      // Check if email is provided and valid
+      if (!email || !email.includes('@')) {
+        throw new Error('Valid email address is required');
+      }
+
+      // First, try the admin/users endpoint with search parameter if user has admin access
       try {
-        console.log('Trying dedicated search endpoint...');
-        const searchResponse = await fetch(`${API_BASE_URL}/visitors/search?email=${encodeURIComponent(email)}`, {
+        // Use the admin API to search for visitors by email
+        const adminSearchUrl = `${API_BASE_URL}/admin/users?search=${encodeURIComponent(email)}`;
+        const adminResponse = await fetch(adminSearchUrl, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
           },
         });
 
-        if (searchResponse.ok) {
-          const result = await handleResponse<Visitor[]>(searchResponse);
-          console.log('Search endpoint successful:', result.length, 'results found');
-          return result;
+        // If successful, this means the user has admin access
+        if (adminResponse.ok) {
+          // Now use the visitors endpoint to get all visitors (admin access)
+          const visitorsResponse = await fetch(`${API_BASE_URL}/visitors`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          if (visitorsResponse.ok) {
+            const visitors = await handleResponse<Visitor[]>(visitorsResponse);
+
+            // Filter visitors by email (case-insensitive)
+            const filteredVisitors = visitors.filter(visitor =>
+              visitor.email && visitor.email.toLowerCase() === email.toLowerCase()
+            );
+
+            return filteredVisitors;
+          }
         }
-      } catch (searchError) {
-        console.warn('Dedicated search endpoint not available, trying alternative methods');
+      } catch (adminError) {
+        console.warn('Admin search failed, falling back to host endpoint');
       }
 
-      // Approach 2: Try to get all visitors (admin access)
-      try {
-        console.log('Trying visitors endpoint...');
-        const response = await fetch(`${API_BASE_URL}/visitors`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const visitors = await handleResponse<Visitor[]>(response);
-          console.log('Visitors endpoint successful:', visitors.length, 'visitors found');
-
-          // Filter visitors by email (case-insensitive)
-          const filteredVisitors = visitors.filter(visitor =>
-            visitor.email && visitor.email.toLowerCase() === email.toLowerCase()
-          );
-
-          console.log('Filtered visitors:', filteredVisitors.length, 'results found');
-          return filteredVisitors;
-        }
-      } catch (visitorError) {
-        console.warn('Visitors endpoint failed, trying host endpoint');
-      }
-
-      // Approach 3: Try the host endpoint as a fallback
-      console.log('Trying host endpoint...');
+      // If admin access fails or user is not an admin, use the host endpoint
       const hostResponse = await fetch(`${API_BASE_URL}/visitors/host`, {
         method: 'GET',
         headers: {
@@ -454,20 +453,159 @@ export const visitorAPI = {
       }
 
       const hostVisitors = await handleResponse<Visitor[]>(hostResponse);
-      console.log('Host endpoint successful:', hostVisitors.length, 'visitors found');
 
       // Filter visitors by email (case-insensitive)
       const filteredHostVisitors = hostVisitors.filter(visitor =>
         visitor.email && visitor.email.toLowerCase() === email.toLowerCase()
       );
 
-      console.log('Filtered host visitors:', filteredHostVisitors.length, 'results found');
       return filteredHostVisitors;
     } catch (error) {
       console.error('Search visitors by email error:', error);
 
       // If all API calls fail, throw an error with a descriptive message
-      throw new Error('Failed to search for visitors. Please try again later.');
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error('Failed to search for visitors. Please try again later.');
+      }
+    }
+  },
+};
+
+// Analytics API
+export const analyticsAPI = {
+  getVisitorMetrics: async (token: string, startDate?: string, endDate?: string): Promise<any> => {
+    try {
+      let url = `${API_BASE_URL}/analytics/visitors`;
+      const params = new URLSearchParams();
+
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get visitor metrics error:', error);
+
+      // If the API fails, return mock data for development
+      return {
+        totalVisitors: 125,
+        checkedIn: 42,
+        checkedOut: 83,
+        scheduled: 15,
+        cancelled: 5,
+        visitorsByDay: [
+          { date: '2023-05-01', count: 5 },
+          { date: '2023-05-02', count: 8 },
+          { date: '2023-05-03', count: 12 },
+          { date: '2023-05-04', count: 7 },
+          { date: '2023-05-05', count: 15 },
+          { date: '2023-05-06', count: 3 },
+          { date: '2023-05-07', count: 2 },
+          { date: '2023-05-08', count: 9 },
+          { date: '2023-05-09', count: 11 },
+          { date: '2023-05-10', count: 14 },
+        ],
+        visitorsByPurpose: [
+          { purpose: 'Meeting', count: 45 },
+          { purpose: 'Interview', count: 28 },
+          { purpose: 'Delivery', count: 15 },
+          { purpose: 'Maintenance', count: 12 },
+          { purpose: 'Tour', count: 18 },
+          { purpose: 'Other', count: 7 },
+        ],
+      };
+    }
+  },
+
+  getAccessMetrics: async (token: string, startDate?: string, endDate?: string): Promise<any> => {
+    try {
+      let url = `${API_BASE_URL}/analytics/access`;
+      const params = new URLSearchParams();
+
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get access metrics error:', error);
+
+      // If the API fails, return mock data for development
+      return {
+        totalAccesses: 210,
+        successfulAccesses: 195,
+        deniedAccesses: 15,
+        accessesByDay: [
+          { date: '2023-05-01', count: 18 },
+          { date: '2023-05-02', count: 22 },
+          { date: '2023-05-03', count: 25 },
+          { date: '2023-05-04', count: 19 },
+          { date: '2023-05-05', count: 28 },
+          { date: '2023-05-06', count: 12 },
+          { date: '2023-05-07', count: 10 },
+          { date: '2023-05-08', count: 21 },
+          { date: '2023-05-09', count: 24 },
+          { date: '2023-05-10', count: 31 },
+        ],
+        accessesByLocation: [
+          { location: 'Main Entrance', count: 85 },
+          { location: 'Side Door', count: 45 },
+          { location: 'Parking Garage', count: 35 },
+          { location: 'Loading Dock', count: 25 },
+          { location: 'Executive Suite', count: 20 },
+        ],
+      };
+    }
+  },
+
+  getDashboardSummary: async (token: string): Promise<any> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/analytics/dashboard`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get dashboard summary error:', error);
+
+      // If the API fails, return mock data for development
+      return {
+        todayVisitors: 15,
+        pendingVisitors: 8,
+        activeVisitors: 7,
+        recentActivity: [
+          { type: 'check-in', visitorName: 'John Doe', time: '09:15 AM' },
+          { type: 'check-out', visitorName: 'Jane Smith', time: '10:30 AM' },
+          { type: 'scheduled', visitorName: 'Robert Johnson', time: '11:45 AM' },
+          { type: 'check-in', visitorName: 'Emily Davis', time: '01:20 PM' },
+          { type: 'check-out', visitorName: 'Michael Wilson', time: '02:45 PM' },
+        ],
+      };
     }
   },
 };

@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import AppBar from '@/components/AppBar';
 import DocumentUploader from '@/components/DocumentUploader';
-import DocumentList from '@/components/DocumentList';
+import EnhancedDocumentViewer from '@/components/EnhancedDocumentViewer';
 import { visitorAPI, Visitor } from '@/lib/api';
 import { FileText, Search, AlertCircle } from 'lucide-react';
 
@@ -50,7 +49,7 @@ export default function DocumentsPage() {
       const visitorData = await visitorAPI.getVisitorsByHost(token);
       setVisitors(visitorData);
       setFilteredVisitors(visitorData);
-      
+
       // Select the first visitor by default if available
       if (visitorData.length > 0) {
         setSelectedVisitorId(visitorData[0]._id);
@@ -71,7 +70,6 @@ export default function DocumentsPage() {
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <AppBar />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="bg-white shadow-md rounded-lg p-6 text-center">
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
@@ -84,7 +82,6 @@ export default function DocumentsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AppBar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Document Management</h1>
@@ -169,14 +166,13 @@ export default function DocumentsPage() {
           <div className="md:col-span-2 space-y-6">
             {selectedVisitorId ? (
               <>
-                <DocumentUploader 
-                  visitorId={selectedVisitorId} 
-                  onUploadSuccess={handleDocumentChange} 
+                <DocumentUploader
+                  visitorId={selectedVisitorId}
+                  onUploadSuccess={handleDocumentChange}
                 />
-                <DocumentList 
-                  visitorId={selectedVisitorId} 
-                  onDocumentDeleted={handleDocumentChange} 
-                  key={documentsUpdated} 
+                <EnhancedDocumentViewer
+                  visitorId={selectedVisitorId}
+                  onDocumentDeleted={handleDocumentChange}
                 />
               </>
             ) : (

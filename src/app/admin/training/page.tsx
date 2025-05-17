@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import AppBar from '@/components/AppBar';
 import TrainingEnrollment from '@/components/TrainingEnrollment';
 import { trainingAPI, Training, visitorAPI, Visitor } from '@/lib/api';
 import { BookOpen, Search, AlertCircle, CheckCircle, XCircle, Edit, Trash2, Plus } from 'lucide-react';
@@ -89,29 +88,17 @@ export default function TrainingPage() {
   };
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <AppBar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="bg-white shadow-md rounded-lg p-6 text-center">
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-            <p className="text-gray-600">Please log in to access this page.</p>
-          </div>
-        </div>
-      </div>
-    );
+    return null; // Layout will handle unauthorized access
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AppBar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Training Management</h1>
-          <p className="mt-2 text-gray-600">
-            Manage training modules and visitor enrollments.
-          </p>
-        </div>
+    <>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Training Management</h1>
+        <p className="mt-2 text-gray-600">
+          Manage training modules and visitor enrollments.
+        </p>
+      </div>
 
         {error && (
           <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 flex items-start">
@@ -271,7 +258,6 @@ export default function TrainingPage() {
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    </>
   );
 }

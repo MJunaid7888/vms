@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import AppBar from '@/components/AppBar';
 import VisitHistoryTable from '@/components/VisitHistoryTable';
-import { Users, Calendar, Clock, BarChart2, ArrowUp, FileText, BookOpen } from 'lucide-react';
+import { Users, Calendar, Clock, BarChart2, ArrowUp, FileText, BookOpen, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { visitorAPI } from '@/lib/api';
+import AnalyticsDashboard from '@/components/charts/AnalyticsDashboard';
 
 export default function AdminDashboard() {
   const [startDate, setStartDate] = useState<string>(
@@ -36,6 +36,7 @@ export default function AdminDashboard() {
       try {
         const visitors = await visitorAPI.getVisitorsByHost(token);
 
+        
         if (Array.isArray(visitors) && visitors.length > 0) {
           // Calculate stats
           const total = visitors.length;
@@ -86,15 +87,13 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AppBar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="mt-2 text-gray-600">
-            Welcome back, {user.firstName}. Here's an overview of your visitor management system.
-          </p>
-        </div>
+    <>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+        <p className="mt-2 text-gray-600">
+          Welcome back, {user.firstName}. Here's an overview of your visitor management system.
+        </p>
+      </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -189,19 +188,24 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
-        {/* Analytics Link */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8 flex flex-col md:flex-row items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">Analytics Dashboard</h2>
-            <p className="text-gray-600 mt-1">View detailed analytics and reports for visitors, training, and system usage</p>
+        {/* Analytics Dashboard */}
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <div className="flex flex-col md:flex-row items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Analytics Dashboard</h2>
+              <p className="text-gray-600 mt-1">Real-time analytics and reports for visitors and access control</p>
+            </div>
+            <Link
+              href="/admin/analytics"
+              className="mt-4 md:mt-0 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <BarChart2 className="h-4 w-4 mr-2" />
+              Full Analytics
+            </Link>
           </div>
-          <Link
-            href="/admin/analytics"
-            className="mt-4 md:mt-0 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <BarChart2 className="h-4 w-4 mr-2" />
-            View Analytics
-          </Link>
+
+          {/* Embedded Analytics Dashboard */}
+          <AnalyticsDashboard refreshInterval={300000} />
         </div>
 
         {/* Recent Visit History */}
@@ -215,7 +219,6 @@ export default function AdminDashboard() {
             <VisitHistoryTable startDate={startDate} endDate={endDate} />
           </div>
         </div>
-      </div>
-    </div>
+    </>
   );
 }

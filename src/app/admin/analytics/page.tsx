@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/AuthContext';
 import { analyticsAPI } from '@/lib/api';
 import { ArrowLeft, BarChart2, PieChart, Users, Calendar, Clock, LogOut } from 'lucide-react';
+import VisitorChart from '@/components/charts/VisitorChart';
 
 interface VisitorMetrics {
   totalVisitors: number;
@@ -61,26 +62,26 @@ export default function AnalyticsDashboard() {
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
     endDate: new Date().toISOString().split('T')[0], // today
   });
-  
-  const { user, token, logout } = useAuth();
+
+  const { user, token } = useAuth();
   const router = useRouter();
-  
+
   // Redirect if not logged in
   useEffect(() => {
     if (!user || !token) {
       router.push('/login');
     }
   }, [user, token, router]);
-  
+
   // Fetch analytics data
   useEffect(() => {
     const fetchAnalytics = async () => {
       if (!token) return;
-      
+
       try {
         setIsLoading(true);
         setError('');
-        
+
         // Fetch all metrics in parallel
         const [visitorData, accessData, trainingData, systemData] = await Promise.all([
           analyticsAPI.getVisitorMetrics(token, dateRange.startDate, dateRange.endDate),
@@ -88,21 +89,21 @@ export default function AnalyticsDashboard() {
           analyticsAPI.getTrainingMetrics(token, dateRange.startDate, dateRange.endDate),
           analyticsAPI.getSystemMetrics(token),
         ]);
-        
-        setVisitorMetrics(visitorData);
-        setAccessMetrics(accessData);
-        setTrainingMetrics(trainingData);
-        setSystemMetrics(systemData);
+
+        setVisitorMetrics(visitorData as VisitorMetrics);
+        setAccessMetrics(accessData as AccessMetrics);
+        setTrainingMetrics(trainingData as TrainingMetrics);
+        setSystemMetrics(systemData as SystemMetrics);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch analytics data');
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     fetchAnalytics();
   }, [token, dateRange]);
-  
+
   const handleDateRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setDateRange(prev => ({
@@ -110,37 +111,25 @@ export default function AnalyticsDashboard() {
       [name]: value,
     }));
   };
-  
+
   if (!user || !token) {
     return null; // Will redirect in useEffect
   }
-  
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <Link 
-            href="/admin/dashboard"
-            className="flex items-center text-blue-900 hover:text-blue-700"
-          >
-            <ArrowLeft className="mr-2 h-5 w-5" />
-            Back to Dashboard
-          </Link>
-          
-          <button 
-            onClick={() => {
-              logout();
-              router.push('/');
-            }}
-            className="flex items-center text-red-600 hover:text-red-800"
-          >
-            <LogOut className="mr-2 h-5 w-5" />
-            Logout
-          </button>
-        </div>
-        
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Analytics Dashboard</h1>
-        
+    <>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Analytics Dashboard</h1>
+
+        <Link
+          href="/admin/dashboard"
+          className="flex items-center text-blue-900 hover:text-blue-700"
+        >
+          <ArrowLeft className="mr-2 h-5 w-5" />
+          Back to Dashboard
+        </Link>
+      </div>
+
         {/* Date Range Selector */}
         <div className="bg-white rounded-lg shadow-md p-4 mb-6">
           <h2 className="text-lg font-semibold mb-4">Date Range</h2>
@@ -167,7 +156,7 @@ export default function AnalyticsDashboard() {
             </div>
           </div>
         </div>
-        
+
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -184,7 +173,7 @@ export default function AnalyticsDashboard() {
                 <Users className="h-6 w-6 mr-2" />
                 <h2 className="text-lg font-semibold">Visitor Metrics</h2>
               </div>
-              
+
               {visitorMetrics ? (
                 <div className="p-4">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -205,26 +194,42 @@ export default function AnalyticsDashboard() {
                       <p className="text-2xl font-bold">{visitorMetrics.scheduled}</p>
                     </div>
                   </div>
-                  
+
                   <div className="mb-4">
                     <h3 className="text-md font-semibold mb-2">Visitors by Day</h3>
-                    <div className="h-64 bg-gray-50 p-4 rounded-lg">
-                      {/* This would be a chart in a real implementation */}
-                      <div className="h-full flex items-center justify-center">
-                        <BarChart2 className="h-12 w-12 text-gray-400" />
-                        <p className="ml-2 text-gray-500">Chart visualization would go here</p>
-                      </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      {visitorMetrics.visitorsByDay && visitorMetrics.visitorsByDay.length > 0 ? (
+                        <VisitorChart
+                          data={visitorMetrics}
+                          type="bar"
+                          title="Visitor Trends"
+                          height={300}
+                        />
+                      ) : (
+                        <div className="h-64 flex items-center justify-center">
+                          <BarChart2 className="h-12 w-12 text-gray-400" />
+                          <p className="ml-2 text-gray-500">No visitor trend data available</p>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  
+
                   <div>
                     <h3 className="text-md font-semibold mb-2">Visitors by Purpose</h3>
-                    <div className="h-64 bg-gray-50 p-4 rounded-lg">
-                      {/* This would be a chart in a real implementation */}
-                      <div className="h-full flex items-center justify-center">
-                        <PieChart className="h-12 w-12 text-gray-400" />
-                        <p className="ml-2 text-gray-500">Chart visualization would go here</p>
-                      </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      {visitorMetrics.visitorsByPurpose && visitorMetrics.visitorsByPurpose.length > 0 ? (
+                        <VisitorChart
+                          data={visitorMetrics}
+                          type="pie"
+                          title="Visit Purposes"
+                          height={300}
+                        />
+                      ) : (
+                        <div className="h-64 flex items-center justify-center">
+                          <PieChart className="h-12 w-12 text-gray-400" />
+                          <p className="ml-2 text-gray-500">No purpose data available</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -234,14 +239,14 @@ export default function AnalyticsDashboard() {
                 </div>
               )}
             </div>
-            
+
             {/* Access Metrics */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="p-4 bg-green-800 text-white flex items-center">
                 <Clock className="h-6 w-6 mr-2" />
                 <h2 className="text-lg font-semibold">Access Metrics</h2>
               </div>
-              
+
               {accessMetrics ? (
                 <div className="p-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -258,15 +263,23 @@ export default function AnalyticsDashboard() {
                       <p className="text-2xl font-bold">{accessMetrics.deniedAccesses}</p>
                     </div>
                   </div>
-                  
+
                   <div>
                     <h3 className="text-md font-semibold mb-2">Accesses by Day</h3>
-                    <div className="h-64 bg-gray-50 p-4 rounded-lg">
-                      {/* This would be a chart in a real implementation */}
-                      <div className="h-full flex items-center justify-center">
-                        <BarChart2 className="h-12 w-12 text-gray-400" />
-                        <p className="ml-2 text-gray-500">Chart visualization would go here</p>
-                      </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      {accessMetrics.accessesByDay && accessMetrics.accessesByDay.length > 0 ? (
+                        <VisitorChart
+                          data={accessMetrics}
+                          type="line"
+                          title="Access Trends"
+                          height={300}
+                        />
+                      ) : (
+                        <div className="h-64 flex items-center justify-center">
+                          <BarChart2 className="h-12 w-12 text-gray-400" />
+                          <p className="ml-2 text-gray-500">No access trend data available</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -276,14 +289,14 @@ export default function AnalyticsDashboard() {
                 </div>
               )}
             </div>
-            
+
             {/* Training Metrics */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="p-4 bg-purple-800 text-white flex items-center">
                 <Calendar className="h-6 w-6 mr-2" />
                 <h2 className="text-lg font-semibold">Training Metrics</h2>
               </div>
-              
+
               {trainingMetrics ? (
                 <div className="p-4">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -313,7 +326,6 @@ export default function AnalyticsDashboard() {
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </>
   );
 }
