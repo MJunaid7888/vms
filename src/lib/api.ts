@@ -266,6 +266,11 @@ export const visitorAPI = {
     }
   },
 
+  // Alias for getVisitorById to maintain backward compatibility
+  getVisitor: async (visitorId: string, token: string): Promise<Visitor> => {
+    return visitorAPI.getVisitorById(visitorId, token);
+  },
+
   getVisitorById: async (visitorId: string, token: string): Promise<Visitor> => {
     try {
       const response = await fetch(`${API_BASE_URL}/visitors/${visitorId}`, {
@@ -1001,6 +1006,46 @@ export const employeeAPI = {
       console.error('Get employees error:', error);
 
       // Rethrow the error
+      throw error;
+    }
+  },
+
+  // Get employee by ID
+  getEmployee: async (employeeId: string, token: string): Promise<Employee> => {
+    try {
+      // First try to get the user from the admin API
+      try {
+        const response = await fetch(`${API_BASE_URL}/admin/users/${employeeId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        const user = await handleResponse<any>(response);
+
+        return {
+          id: user._id || user.id,
+          name: `${user.firstName} ${user.lastName}`,
+          email: user.email,
+          department: user.department || 'General',
+        };
+      } catch (adminError) {
+        console.error('Get admin/user by ID error:', adminError);
+
+        // If admin API fails, try to get all users and find the one with matching ID
+        const employees = await employeeAPI.getEmployees(token);
+        const employee = employees.find(emp => emp.id === employeeId);
+
+        if (employee) {
+          return employee;
+        }
+
+        // If we still can't find the employee, throw an error
+        throw new Error('Employee not found');
+      }
+    } catch (error) {
+      console.error('Get employee error:', error);
       throw error;
     }
   },
