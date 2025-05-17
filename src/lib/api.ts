@@ -268,10 +268,6 @@ export const visitorAPI = {
 
   // Alias for getVisitorById to maintain backward compatibility
   getVisitor: async (visitorId: string, token: string): Promise<Visitor> => {
-    return visitorAPI.getVisitorById(visitorId, token);
-  },
-
-  getVisitorById: async (visitorId: string, token: string): Promise<Visitor> => {
     try {
       const response = await fetch(`${API_BASE_URL}/visitors/${visitorId}`, {
         method: 'GET',
@@ -285,6 +281,10 @@ export const visitorAPI = {
       console.error('Get visitor error:', error);
       throw error;
     }
+  },
+
+  getVisitorById: async (visitorId: string, token: string): Promise<Visitor> => {
+    return visitorAPI.getVisitor(visitorId, token);
   },
 
   updateVisitor: async (visitorId: string, visitorData: Partial<VisitorData>, token: string): Promise<Visitor> => {
@@ -1013,6 +1013,19 @@ export const employeeAPI = {
   // Get employee by ID
   getEmployee: async (employeeId: string, token: string): Promise<Employee> => {
     try {
+      // Check if employeeId is an object (which would cause API errors)
+      if (typeof employeeId !== 'string' || employeeId === '[object Object]') {
+        console.warn('Invalid employeeId format:', employeeId);
+
+        // Return a default employee object to prevent UI errors
+        return {
+          id: 'unknown',
+          name: 'Unknown Host',
+          email: '',
+          department: 'General'
+        };
+      }
+
       // First try to get the user from the admin API
       try {
         const response = await fetch(`${API_BASE_URL}/admin/users/${employeeId}`, {
@@ -1034,19 +1047,37 @@ export const employeeAPI = {
         console.error('Get admin/user by ID error:', adminError);
 
         // If admin API fails, try to get all users and find the one with matching ID
-        const employees = await employeeAPI.getEmployees(token);
-        const employee = employees.find(emp => emp.id === employeeId);
+        try {
+          const employees = await employeeAPI.getEmployees(token);
+          const employee = employees.find(emp => emp.id === employeeId);
 
-        if (employee) {
-          return employee;
+          if (employee) {
+            return employee;
+          }
+        } catch (empError) {
+          console.error('Failed to get employees list:', empError);
         }
 
-        // If we still can't find the employee, throw an error
-        throw new Error('Employee not found');
+        // If we still can't find the employee, return a default object instead of throwing an error
+        // This prevents UI errors when host information can't be found
+        console.warn('Employee not found, using default value');
+        return {
+          id: employeeId,
+          name: 'Unknown Host',
+          email: '',
+          department: 'General'
+        };
       }
     } catch (error) {
       console.error('Get employee error:', error);
-      throw error;
+
+      // Return a default employee object to prevent UI errors
+      return {
+        id: employeeId || 'unknown',
+        name: 'Unknown Host',
+        email: '',
+        department: 'General'
+      };
     }
   },
 };

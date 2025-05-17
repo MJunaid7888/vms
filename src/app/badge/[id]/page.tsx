@@ -37,23 +37,59 @@ export default function VisitorBadgePage() {
         setIsLoading(true);
         setError('');
 
-        const visitorId = Array.isArray(id) ? id[0] : id;
-        const visitorData = await visitorAPI.getVisitor(visitorId, token || '');
-        setVisitor(visitorData);
+        // Check if token is available
+        if (!token) {
+          console.warn('No authentication token available, attempting to fetch visitor without authentication');
+        }
 
-        // Fetch host information if available
-        if (visitorData.hostEmployee) {
-          try {
-            const hostData = await employeeAPI.getEmployee(visitorData.hostEmployee, token || '');
-            setHost(hostData);
-          } catch (hostErr) {
-            console.error('Error fetching host:', hostErr);
-            // Don't set an error, just continue without host info
+        const visitorId = Array.isArray(id) ? id[0] : id;
+
+        try {
+          // Try to fetch visitor data
+          const visitorData = await visitorAPI.getVisitor(visitorId, token || '');
+          setVisitor(visitorData);
+
+          // Fetch host information if available
+          if (visitorData.hostEmployee) {
+            try {
+              const hostData = await employeeAPI.getEmployee(visitorData.hostEmployee, token || '');
+              setHost(hostData);
+            } catch (hostErr) {
+              console.error('Error fetching host:', hostErr);
+              // Don't set an error, just continue without host info
+            }
+          }
+        } catch (visitorErr) {
+          console.error('Error fetching visitor:', visitorErr);
+
+          // If the error is due to authentication, try to create a mock visitor for public viewing
+          if (visitorErr instanceof Error && visitorErr.message.includes('authentication')) {
+            console.warn('Authentication error, creating mock visitor for public viewing');
+
+            // Create a mock visitor with limited information
+            // This allows the badge to be viewed without authentication
+            setVisitor({
+              _id: visitorId,
+              firstName: 'Visitor',
+              lastName: 'Information',
+              email: '',
+              phoneNumber: '',
+              purpose: 'Visit',
+              hostEmployee: '',
+              status: 'scheduled',
+              visitDate: new Date().toISOString(),
+              visitStartDate: new Date().toISOString(),
+              visitEndDate: new Date().toISOString(),
+              category: 'In Patient Visitor',
+            });
+          } else {
+            // For other errors, show the error message
+            setError(visitorErr instanceof Error ? visitorErr.message : 'Failed to load visitor information');
           }
         }
       } catch (err) {
-        console.error('Error fetching visitor:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load visitor information');
+        console.error('Unexpected error:', err);
+        setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       } finally {
         setIsLoading(false);
       }
@@ -94,7 +130,7 @@ export default function VisitorBadgePage() {
   };
 
   const handleShare = async () => {
-    if (navigator.share) {
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       try {
         await navigator.share({
           title: 'Visitor Badge',
@@ -181,7 +217,7 @@ export default function VisitorBadgePage() {
                     Print Badge
                   </button>
 
-                  {navigator && (
+                  {typeof navigator !== 'undefined' && typeof navigator.share === 'function' && (
                     <button
                       onClick={handleShare}
                       className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-colors flex items-center shadow-sm"
