@@ -152,13 +152,13 @@ export default function AdminSidebar() {
         aria-controls="admin-sidebar"
         aria-label="Toggle navigation menu"
       >
-        {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        {isOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
       </button>
 
       {/* Sidebar */}
       <div
         id="admin-sidebar"
-        className={`fixed inset-y-0 left-0 z-30 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-30 w-[85%] sm:w-72 md:w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         role="navigation"
@@ -166,12 +166,18 @@ export default function AdminSidebar() {
       >
         <div className="flex flex-col h-full">
           {/* Sidebar header */}
-          <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-800">Admin Panel</h2>
+          <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Admin Panel</h2>
+            <button
+              className="lg:hidden p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+              onClick={() => setIsOpen(false)}
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
 
           {/* Sidebar content */}
-          <div className="flex-1 overflow-y-auto py-4 px-3">
+          <div className="flex-1 overflow-y-auto py-3 sm:py-4 px-3">
             <nav className="space-y-1">
               {navItems.map((item) => (
                 <div key={item.title}>
@@ -179,7 +185,7 @@ export default function AdminSidebar() {
                     <div>
                       <button
                         onClick={() => toggleGroup(item.title.toLowerCase())}
-                        className={`flex items-center justify-between w-full px-3 py-2 text-sm font-medium rounded-md group ${
+                        className={`flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium rounded-md group ${
                           isActive(item.href)
                             ? 'bg-blue-50 text-blue-700'
                             : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
@@ -188,34 +194,34 @@ export default function AdminSidebar() {
                         aria-controls={`${item.title.toLowerCase()}-group`}
                       >
                         <div className="flex items-center">
-                          <span className="mr-3 text-gray-500 group-hover:text-gray-600" aria-hidden="true">
+                          <span className="mr-3 text-gray-500 group-hover:text-gray-600 flex-shrink-0" aria-hidden="true">
                             {item.icon}
                           </span>
-                          {item.title}
+                          <span className="truncate">{item.title}</span>
                         </div>
                         {expandedGroups[item.title.toLowerCase()] ? (
-                          <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                          <ChevronDown className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
                         ) : (
-                          <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                          <ChevronRight className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
                         )}
                       </button>
                       {expandedGroups[item.title.toLowerCase()] && (
-                        <div id={`${item.title.toLowerCase()}-group`} className="mt-1 pl-8 space-y-1">
+                        <div id={`${item.title.toLowerCase()}-group`} className="mt-1 pl-6 sm:pl-8 space-y-1">
                           {item.children.map((child) => (
                             <Link
                               key={child.title}
                               href={child.href}
-                              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                              className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-md ${
                                 isActive(child.href)
                                   ? 'bg-blue-50 text-blue-700'
                                   : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                               }`}
                               aria-current={isActive(child.href) ? 'page' : undefined}
                             >
-                              <span className="mr-3 text-gray-500" aria-hidden="true">
+                              <span className="mr-3 text-gray-500 flex-shrink-0" aria-hidden="true">
                                 {child.icon}
                               </span>
-                              {child.title}
+                              <span className="truncate">{child.title}</span>
                             </Link>
                           ))}
                         </div>
@@ -224,17 +230,17 @@ export default function AdminSidebar() {
                   ) : (
                     <Link
                       href={item.href}
-                      className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                      className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-md ${
                         isActive(item.href)
                           ? 'bg-blue-50 text-blue-700'
                           : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                       }`}
                       aria-current={isActive(item.href) ? 'page' : undefined}
                     >
-                      <span className="mr-3 text-gray-500" aria-hidden="true">
+                      <span className="mr-3 text-gray-500 flex-shrink-0" aria-hidden="true">
                         {item.icon}
                       </span>
-                      {item.title}
+                      <span className="truncate">{item.title}</span>
                     </Link>
                   )}
                 </div>
@@ -243,13 +249,13 @@ export default function AdminSidebar() {
           </div>
 
           {/* Sidebar footer */}
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-3 sm:p-4 border-t border-gray-200">
             <div className="flex items-center">
-              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
                 <Users className="h-4 w-4 text-blue-600" aria-hidden="true" />
               </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-700">Admin User</p>
+              <div className="ml-3 overflow-hidden">
+                <p className="text-sm font-medium text-gray-700 truncate">Admin User</p>
                 <p className="text-xs text-gray-500">View Profile</p>
               </div>
             </div>

@@ -238,6 +238,9 @@ export default function VisitorsPage() {
                         Visit Date
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Category
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -268,6 +271,9 @@ export default function VisitorsPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {formatDate(visitor.visitDate)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {visitor.category || 'Not specified'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
@@ -355,6 +361,19 @@ export default function VisitorsPage() {
                         <div>
                           <span className="font-medium text-gray-500">Visit Date:</span>
                           <div className="mt-1 text-gray-900">{formatDate(visitor.visitDate)}</div>
+                        </div>
+
+                        <div>
+                          <span className="font-medium text-gray-500">Category:</span>
+                          <div className="mt-1 text-gray-900">{visitor.category || 'Not specified'}</div>
+                        </div>
+
+                        <div>
+                          <span className="font-medium text-gray-500">Visit Time:</span>
+                          <div className="mt-1 text-gray-900">
+                            {visitor.visitStartDate ? new Date(visitor.visitStartDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'} -
+                            {visitor.visitEndDate ? new Date(visitor.visitEndDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}
+                          </div>
                         </div>
                       </div>
 

@@ -47,18 +47,18 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo and primary navigation */}
-          <div className="flex">
+          <div className="flex flex-1">
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="flex items-center">
                 <div className="bg-blue-700 text-white p-1.5 rounded mr-2">
                   <Shield className="h-5 w-5" />
                 </div>
-                <span className="text-2xl font-bold text-blue-800">QuickPass</span>
+                <span className="text-xl sm:text-2xl font-bold text-blue-800">QuickPass</span>
               </Link>
             </div>
 
             {/* Desktop navigation */}
-            <div className="hidden sm:ml-10 sm:flex sm:space-x-8">
+            <div className="hidden sm:ml-10 sm:flex sm:space-x-4 lg:space-x-8">
               <Link
                 href="/"
                 className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-md ${
@@ -68,7 +68,7 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
                 }`}
               >
                 <Home className="mr-1.5 h-4 w-4" />
-                Home
+                <span>Home</span>
               </Link>
 
               <Link
@@ -80,7 +80,7 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
                 }`}
               >
                 <UserPlus className="mr-1.5 h-4 w-4" />
-                New Visitor
+                <span>New Visitor</span>
               </Link>
 
               <Link
@@ -92,7 +92,7 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
                 }`}
               >
                 <User className="mr-1.5 h-4 w-4" />
-                Return Visitor
+                <span>Return Visitor</span>
               </Link>
 
               <Link
@@ -104,7 +104,7 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
                 }`}
               >
                 <LogOut className="mr-1.5 h-4 w-4" />
-                Check Out
+                <span>Check Out</span>
               </Link>
             </div>
           </div>
@@ -297,7 +297,7 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
           <div className="pt-2 pb-3 space-y-1 px-2">
             <Link
               href="/"
-              className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${
+              className={`flex items-center px-3 py-3 rounded-md text-base font-medium ${
                 isActive('/')
                   ? 'bg-blue-100 text-blue-700'
                   : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'
@@ -309,7 +309,7 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
             </Link>
             <Link
               href="/check-in"
-              className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${
+              className={`flex items-center px-3 py-3 rounded-md text-base font-medium ${
                 isActive('/check-in')
                   ? 'bg-blue-100 text-blue-700'
                   : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'
@@ -321,7 +321,7 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
             </Link>
             <Link
               href="/been-here-before"
-              className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${
+              className={`flex items-center px-3 py-3 rounded-md text-base font-medium ${
                 isActive('/been-here-before')
                   ? 'bg-blue-100 text-blue-700'
                   : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'
@@ -333,7 +333,7 @@ export default function AppBar({ showAuthButtons = true }: AppBarProps) {
             </Link>
             <Link
               href="/check-out"
-              className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${
+              className={`flex items-center px-3 py-3 rounded-md text-base font-medium ${
                 isActive('/check-out')
                   ? 'bg-blue-100 text-blue-700'
                   : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'

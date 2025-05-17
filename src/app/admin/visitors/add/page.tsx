@@ -18,6 +18,9 @@ export default function AddVisitorPage() {
     purpose: '',
     hostEmployeeId: '',
     visitDate: new Date().toISOString().split('T')[0],
+    visitStartDate: new Date().toISOString().split('T')[0],
+    visitEndDate: new Date().toISOString().split('T')[0],
+    category: 'In Patient Visitor',
   });
 
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -64,7 +67,9 @@ export default function AddVisitorPage() {
     }
 
     // Validate form
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.purpose || !formData.hostEmployeeId || !formData.visitDate) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.purpose ||
+        !formData.hostEmployeeId || !formData.visitDate || !formData.visitStartDate ||
+        !formData.visitEndDate || !formData.category) {
       setError('Please fill in all required fields');
       return;
     }
@@ -91,6 +96,9 @@ export default function AddVisitorPage() {
         purpose: '',
         hostEmployeeId: '',
         visitDate: new Date().toISOString().split('T')[0],
+        visitStartDate: new Date().toISOString().split('T')[0],
+        visitEndDate: new Date().toISOString().split('T')[0],
+        category: 'In Patient Visitor',
       });
 
       // Redirect to the visitor details page after a short delay
@@ -304,6 +312,71 @@ export default function AddVisitorPage() {
                     className="pl-10 block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
                     aria-required="true"
                   />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="visitStartDate" className="block text-sm font-medium text-gray-700">
+                  Visit Start Date & Time <span className="text-red-500">*</span>
+                </label>
+                <div className="mt-1 relative rounded-md shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Clock className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                  </div>
+                  <input
+                    type="datetime-local"
+                    id="visitStartDate"
+                    name="visitStartDate"
+                    value={formData.visitStartDate}
+                    onChange={handleChange}
+                    required
+                    className="pl-10 block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
+                    aria-required="true"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="visitEndDate" className="block text-sm font-medium text-gray-700">
+                  Visit End Date & Time <span className="text-red-500">*</span>
+                </label>
+                <div className="mt-1 relative rounded-md shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Clock className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                  </div>
+                  <input
+                    type="datetime-local"
+                    id="visitEndDate"
+                    name="visitEndDate"
+                    value={formData.visitEndDate}
+                    onChange={handleChange}
+                    required
+                    className="pl-10 block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
+                    aria-required="true"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+                  Visitor Category <span className="text-red-500">*</span>
+                </label>
+                <div className="mt-1 relative rounded-md shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                  </div>
+                  <select
+                    id="category"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    required
+                    className="pl-10 block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
+                    aria-required="true"
+                  >
+                    <option value="In Patient Visitor">In Patient Visitor</option>
+                    <option value="CONTRACTORS">CONTRACTORS</option>
+                  </select>
                 </div>
               </div>
 

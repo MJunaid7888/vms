@@ -340,6 +340,18 @@ function VisitorInfo({ visitor }: { visitor: Visitor }) {
             <p className="font-medium">{new Date(visitor.visitDate).toLocaleDateString()}</p>
           </div>
           <div>
+            <p className="text-sm text-gray-500">Visit Start Date & Time</p>
+            <p className="font-medium">{visitor.visitStartDate ? new Date(visitor.visitStartDate).toLocaleString() : 'Not specified'}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Visit End Date & Time</p>
+            <p className="font-medium">{visitor.visitEndDate ? new Date(visitor.visitEndDate).toLocaleString() : 'Not specified'}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Visitor Category</p>
+            <p className="font-medium">{visitor.category || 'Not specified'}</p>
+          </div>
+          <div>
             <p className="text-sm text-gray-500">Status</p>
             <p className="font-medium">
               <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full

@@ -27,6 +27,9 @@ export interface VisitorData {
   hostEmployee?: string;  // This is used in some components, but should be mapped to hostEmployeeId
   company?: string;
   visitDate: string;
+  visitStartDate: string;
+  visitEndDate: string;
+  category: 'In Patient Visitor' | 'CONTRACTORS';
 }
 
 export interface User {
@@ -55,6 +58,9 @@ export interface Visitor {
   checkOutTime?: string;
   status: 'scheduled' | 'checked-in' | 'checked-out' | 'cancelled';
   visitDate: string;
+  visitStartDate: string;
+  visitEndDate: string;
+  category: 'In Patient Visitor' | 'CONTRACTORS';
   qrCode?: string;
   trainingCompleted?: boolean;
 }
@@ -927,12 +933,13 @@ export const employeeAPI = {
       try {
         const users = await handleResponse<any[]>(response);
 
+
         // Convert users to employee format
         return users.map((user: any) => ({
           id: user._id || user.id,
           name: `${user.firstName} ${user.lastName}`,
           email: user.email,
-          department: user.department || 'General'
+          department: user.department || 'General',
         }));
       } catch (adminError) {
         console.error('Get admin/users error:', adminError);
@@ -988,25 +995,13 @@ export const employeeAPI = {
         }
       }
 
-      // Return mock data only if all API calls fail
-      return [
-        { id: 'emp1', name: 'John Smith', email: 'john.smith@example.com', department: 'IT' },
-        { id: 'emp2', name: 'Jane Doe', email: 'jane.doe@example.com', department: 'HR' },
-        { id: 'emp3', name: 'Robert Johnson', email: 'robert.johnson@example.com', department: 'Finance' },
-        { id: 'emp4', name: 'Emily Davis', email: 'emily.davis@example.com', department: 'Marketing' },
-        { id: 'emp5', name: 'Michael Wilson', email: 'michael.wilson@example.com', department: 'Operations' }
-      ];
+      // If all API calls fail, throw an error
+      throw new Error('Failed to fetch employees. Please check your connection and try again.');
     } catch (error) {
       console.error('Get employees error:', error);
 
-      // Return mock data if the main try block fails
-      return [
-        { id: 'emp1', name: 'John Smith', email: 'john.smith@example.com', department: 'IT' },
-        { id: 'emp2', name: 'Jane Doe', email: 'jane.doe@example.com', department: 'HR' },
-        { id: 'emp3', name: 'Robert Johnson', email: 'robert.johnson@example.com', department: 'Finance' },
-        { id: 'emp4', name: 'Emily Davis', email: 'emily.davis@example.com', department: 'Marketing' },
-        { id: 'emp5', name: 'Michael Wilson', email: 'michael.wilson@example.com', department: 'Operations' }
-      ];
+      // Rethrow the error
+      throw error;
     }
   },
 };
@@ -1036,34 +1031,8 @@ export const analyticsAPI = {
     } catch (error) {
       console.error('Get visitor metrics error:', error);
 
-      // If the API fails, return mock data for development
-      return {
-        totalVisitors: 125,
-        checkedIn: 42,
-        checkedOut: 83,
-        scheduled: 15,
-        cancelled: 5,
-        visitorsByDay: [
-          { date: '2023-05-01', count: 5 },
-          { date: '2023-05-02', count: 8 },
-          { date: '2023-05-03', count: 12 },
-          { date: '2023-05-04', count: 7 },
-          { date: '2023-05-05', count: 15 },
-          { date: '2023-05-06', count: 3 },
-          { date: '2023-05-07', count: 2 },
-          { date: '2023-05-08', count: 9 },
-          { date: '2023-05-09', count: 11 },
-          { date: '2023-05-10', count: 14 },
-        ],
-        visitorsByPurpose: [
-          { purpose: 'Meeting', count: 45 },
-          { purpose: 'Interview', count: 28 },
-          { purpose: 'Delivery', count: 15 },
-          { purpose: 'Maintenance', count: 12 },
-          { purpose: 'Tour', count: 18 },
-          { purpose: 'Other', count: 7 },
-        ],
-      };
+      // Throw an error if the API fails
+      throw error;
     }
   },
 
@@ -1090,31 +1059,8 @@ export const analyticsAPI = {
     } catch (error) {
       console.error('Get access metrics error:', error);
 
-      // If the API fails, return mock data for development
-      return {
-        totalAccesses: 210,
-        successfulAccesses: 195,
-        deniedAccesses: 15,
-        accessesByDay: [
-          { date: '2023-05-01', count: 18 },
-          { date: '2023-05-02', count: 22 },
-          { date: '2023-05-03', count: 25 },
-          { date: '2023-05-04', count: 19 },
-          { date: '2023-05-05', count: 28 },
-          { date: '2023-05-06', count: 12 },
-          { date: '2023-05-07', count: 10 },
-          { date: '2023-05-08', count: 21 },
-          { date: '2023-05-09', count: 24 },
-          { date: '2023-05-10', count: 31 },
-        ],
-        accessesByLocation: [
-          { location: 'Main Entrance', count: 85 },
-          { location: 'Side Door', count: 45 },
-          { location: 'Parking Garage', count: 35 },
-          { location: 'Loading Dock', count: 25 },
-          { location: 'Executive Suite', count: 20 },
-        ],
-      };
+      // Throw an error if the API fails
+      throw error;
     }
   },
 
@@ -1173,19 +1119,8 @@ export const analyticsAPI = {
     } catch (error) {
       console.error('Get dashboard summary error:', error);
 
-      // If the API fails, return mock data for development
-      return {
-        todayVisitors: 15,
-        pendingVisitors: 8,
-        activeVisitors: 7,
-        recentActivity: [
-          { type: 'check-in', visitorName: 'John Doe', time: '09:15 AM' },
-          { type: 'check-out', visitorName: 'Jane Smith', time: '10:30 AM' },
-          { type: 'scheduled', visitorName: 'Robert Johnson', time: '11:45 AM' },
-          { type: 'check-in', visitorName: 'Emily Davis', time: '01:20 PM' },
-          { type: 'check-out', visitorName: 'Michael Wilson', time: '02:45 PM' },
-        ],
-      };
+      // Throw an error if the API fails
+      throw error;
     }
   },
 };
