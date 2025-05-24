@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { trainingAPI } from '@/lib/api';
-import { 
-  BookOpen, 
-  CheckCircle, 
-  AlertCircle, 
-  ChevronRight, 
-  ChevronLeft, 
-  Award, 
-  X, 
+import {
+  BookOpen,
+  CheckCircle,
+  AlertCircle,
+  ChevronRight,
+  ChevronLeft,
+  Award,
+  X,
   Info,
   HelpCircle,
   Clock
@@ -39,11 +39,11 @@ interface EnhancedTrainingModuleProps {
   onClose: () => void;
 }
 
-export default function EnhancedTrainingModule({ 
-  visitorId, 
-  token, 
-  onComplete, 
-  onClose 
+export default function EnhancedTrainingModule({
+  visitorId,
+  token,
+  onComplete,
+  onClose
 }: EnhancedTrainingModuleProps) {
   const [trainings, setTrainings] = useState<Training[]>([]);
   const [currentTraining, setCurrentTraining] = useState<Training | null>(null);
@@ -64,7 +64,7 @@ export default function EnhancedTrainingModule({
       const timer = setInterval(() => {
         setTimeSpent(prev => prev + 1);
       }, 1000);
-      
+
       return () => clearInterval(timer);
     }
   }, [currentStep]);
@@ -88,7 +88,7 @@ export default function EnhancedTrainingModule({
         // First check if visitor has any required trainings
         try {
           const trainingStatus = await trainingAPI.getTrainingStatus(visitorId, token);
-          
+
           // If visitor has already completed all required trainings, show a message
           if (trainingStatus && trainingStatus.length > 0 && trainingStatus.every(t => t.passed)) {
             // All trainings completed, but we'll still show available trainings
@@ -108,20 +108,12 @@ export default function EnhancedTrainingModule({
             // Initialize selected answers array with -1 (no selection) for each question
             setSelectedAnswers(Array(trainingsResponse[0].questions.length).fill(-1));
           } else {
-            // Create mock training if API doesn't return any
-            const mockTraining = createMockTraining();
-            setTrainings([mockTraining]);
-            setCurrentTraining(mockTraining);
-            setSelectedAnswers(Array(mockTraining.questions.length).fill(-1));
+            // No trainings available
+            setError('No training modules available');
           }
         } catch (trainingsError) {
           console.error('Error fetching trainings:', trainingsError);
-
-          // Create mock training as fallback
-          const mockTraining = createMockTraining();
-          setTrainings([mockTraining]);
-          setCurrentTraining(mockTraining);
-          setSelectedAnswers(Array(mockTraining.questions.length).fill(-1));
+          setError('Failed to load training modules');
         }
       } catch (err) {
         console.error('Error in training module:', err);
@@ -134,97 +126,7 @@ export default function EnhancedTrainingModule({
     fetchData();
   }, [visitorId, token]);
 
-  // Create a mock training for testing when API fails
-  const createMockTraining = (): Training => {
-    return {
-      _id: 'mock-training-1',
-      title: 'Workplace Safety Training',
-      description: 'Essential safety procedures for all visitors',
-      type: 'safety',
-      content: `
-        <h2>Workplace Safety Guidelines</h2>
-        <p>Welcome to our facility. Your safety is our top priority. Please review these important safety guidelines:</p>
-        
-        <h3>Emergency Procedures</h3>
-        <ul>
-          <li>In case of fire, follow the evacuation plan and exit the building using the nearest emergency exit</li>
-          <li>Emergency exits are marked with illuminated signs</li>
-          <li>Fire extinguishers are located near emergency exits and in designated areas</li>
-          <li>First aid kits are available at reception and in break rooms</li>
-        </ul>
-        
-        <h3>General Safety Rules</h3>
-        <ul>
-          <li>Always wear your visitor badge visibly while on premises</li>
-          <li>Stay with your host at all times unless otherwise instructed</li>
-          <li>Report any safety concerns or incidents to your host immediately</li>
-          <li>Observe all safety signs and barriers</li>
-          <li>Do not operate any equipment without proper authorization and training</li>
-        </ul>
-        
-        <h3>Emergency Contacts</h3>
-        <p>In case of emergency:</p>
-        <ul>
-          <li>Dial extension 555 from any internal phone</li>
-          <li>Alert the nearest staff member</li>
-          <li>For medical emergencies, call 911 (or local emergency number)</li>
-        </ul>
-      `,
-      questions: [
-        {
-          question: 'What should you do in case of a fire?',
-          options: [
-            'Hide under a desk',
-            'Follow the evacuation plan and exit the building',
-            'Call your host',
-            'Continue your meeting'
-          ],
-          correctAnswer: 1
-        },
-        {
-          question: 'Where are fire extinguishers located?',
-          options: [
-            'Only in the security office',
-            'Near emergency exits and in designated areas',
-            'Only in the cafeteria',
-            'There are no fire extinguishers'
-          ],
-          correctAnswer: 1
-        },
-        {
-          question: 'What should you do with your visitor badge?',
-          options: [
-            'Keep it in your pocket',
-            'Return it immediately after receiving it',
-            'Wear it visibly at all times while on premises',
-            'You don\'t need a visitor badge'
-          ],
-          correctAnswer: 2
-        },
-        {
-          question: 'Who should you stay with while on the premises?',
-          options: [
-            'The security guard',
-            'Your host',
-            'The receptionist',
-            'You can walk around freely'
-          ],
-          correctAnswer: 1
-        },
-        {
-          question: 'What number should you dial for internal emergencies?',
-          options: [
-            '911',
-            '000',
-            '555',
-            '123'
-          ],
-          correctAnswer: 2
-        }
-      ],
-      requiredScore: 80
-    };
-  };
+
 
   // Handle answer selection
   const handleAnswerSelection = (questionIndex: number, optionIndex: number) => {
@@ -298,8 +200,8 @@ export default function EnhancedTrainingModule({
   };
 
   // Progress percentage for quiz
-  const progressPercentage = currentTraining 
-    ? Math.round(((currentQuestionIndex + 1) / currentTraining.questions.length) * 100) 
+  const progressPercentage = currentTraining
+    ? Math.round(((currentQuestionIndex + 1) / currentTraining.questions.length) * 100)
     : 0;
 
   if (isLoading) {
@@ -428,8 +330,8 @@ export default function EnhancedTrainingModule({
               <span>{progressPercentage}% Complete</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div 
-                className="bg-blue-600 h-2.5 rounded-full" 
+              <div
+                className="bg-blue-600 h-2.5 rounded-full"
                 style={{ width: `${progressPercentage}%` }}
               ></div>
             </div>
@@ -488,7 +390,7 @@ export default function EnhancedTrainingModule({
         {currentStep === 'content' && (
           <div className="space-y-6">
             <div className="prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: currentTraining.content }}></div>
-            
+
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 onClick={() => setCurrentStep('intro')}

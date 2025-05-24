@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import VisitHistoryTable from '@/components/VisitHistoryTable';
 import { Users, Calendar, Clock, BarChart2, ArrowUp, FileText, BookOpen, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
-import { visitorAPI } from '@/lib/api';
+import { visitorAPI, analyticsAPI } from '@/lib/api';
 import AnalyticsDashboard from '@/components/charts/AnalyticsDashboard';
 
 export default function AdminDashboard() {
@@ -33,49 +33,52 @@ export default function AdminDashboard() {
 
     setIsLoading(true);
     try {
+      // Try to get visitor stats from analytics API first
       try {
-        const visitors = await visitorAPI.getVisitorsByHost(token);
-
-        
-        if (Array.isArray(visitors) && visitors.length > 0) {
-          // Calculate stats
-          const total = visitors.length;
-          const checkedIn = visitors.filter(v => v.status === 'checked-in').length;
-          const checkedOut = visitors.filter(v => v.status === 'checked-out').length;
-          const scheduled = visitors.filter(v => v.status === 'scheduled').length;
-
-          setVisitorStats({ total, checkedIn, checkedOut, scheduled });
-          return;
-        }
-      } catch (apiError) {
-        console.error('Error fetching visitor stats from API:', apiError);
+        const stats = await analyticsAPI.getVisitorStats(token);
+        setVisitorStats(stats);
+        return;
+      } catch (analyticsError) {
+        console.error('Error fetching visitor stats from analytics API:', analyticsError);
       }
 
-      // If API call fails or returns no data, use mock data
-      console.log('Using mock visitor stats data');
+      // Fallback: Try to calculate stats from visitor data
+      try {
+        const visitors = await visitorAPI.getVisitorsByHost(token);
+        if (Array.isArray(visitors) && visitors.length > 0) {
+          // Calculate stats from the visitor data
+          const total = visitors.length;
+          const pending = visitors.filter(v => v.status === 'pending').length;
+          const approved = visitors.filter(v => v.status === 'approved').length;
+          const checkedIn = visitors.filter(v => v.status === 'checked-in').length;
+          const checkedOut = visitors.filter(v => v.status === 'checked-out').length;
+          const scheduled = approved; // For backward compatibility
 
-      // Generate random but realistic numbers for the stats
-      const total = Math.floor(Math.random() * 50) + 20; // 20-70 total visitors
-      const checkedIn = Math.floor(Math.random() * 10) + 2; // 2-12 checked in
-      const scheduled = Math.floor(Math.random() * 15) + 5; // 5-20 scheduled
-      const checkedOut = total - checkedIn - scheduled; // Remaining are checked out
+          setVisitorStats({ total, pending, approved, checkedIn, checkedOut, scheduled });
+          return;
+        }
+      } catch (visitorError) {
+        console.error('Error fetching visitor data for stats:', visitorError);
+      }
 
+      // If all API calls fail, show zero stats
+      console.log('All API calls failed, showing empty stats');
       setVisitorStats({
-        total,
-        checkedIn,
-        checkedOut: checkedOut > 0 ? checkedOut : 0,
-        scheduled
+        total: 0,
+        checkedIn: 0,
+        checkedOut: 0,
+        scheduled: 0
       });
 
     } catch (error) {
       console.error('Error in visitor stats component:', error);
 
-      // Fallback to default values
+      // Show zero stats on error
       setVisitorStats({
-        total: 25,
-        checkedIn: 5,
-        checkedOut: 15,
-        scheduled: 5
+        total: 0,
+        checkedIn: 0,
+        checkedOut: 0,
+        scheduled: 0
       });
     } finally {
       setIsLoading(false);

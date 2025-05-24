@@ -144,10 +144,10 @@ export default function BeenHereBeforePage() {
   const selectReturnVisitor = (visitor: any) => {
     // Store visitor data in session storage to be used in the check-in page
     sessionStorage.setItem('returnVisitor', JSON.stringify(visitor));
-    
+
     // Show success message
     setSuccess('Your information has been found! Redirecting to check-in...');
-    
+
     // Redirect to check-in page after a short delay
     setTimeout(() => {
       router.push('/check-in');
@@ -167,7 +167,7 @@ export default function BeenHereBeforePage() {
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Home
               </Link>
-              
+
               <h1 className="text-3xl font-bold text-blue-900 mb-2">Returning Visitor</h1>
               <p className="text-gray-600 mb-8">
                 If you've visited us before, we can quickly retrieve your information to make check-in faster.
@@ -275,7 +275,7 @@ export default function BeenHereBeforePage() {
                                   <span className="font-medium">Company:</span> {visitor.company || 'Not specified'}
                                 </p>
                                 <p className="text-sm text-gray-500">
-                                  <span className="font-medium">Last visit:</span> {new Date(visitor.visitDate).toLocaleDateString()}
+                                  <span className="font-medium">Last visit:</span> {new Date(visitor.visitStartDate || visitor.visitDate).toLocaleDateString()}
                                 </p>
                               </div>
                             </div>

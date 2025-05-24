@@ -32,48 +32,10 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
       setError(null);
 
       try {
-        // In a real implementation, we would fetch notifications from the API
-        // For now, we'll simulate an API response with a timeout
-        setTimeout(() => {
-          // Simulated API response
-          const mockNotifications: Notification[] = [
-            {
-              id: '1',
-              title: 'New Visitor',
-              message: 'John Doe has checked in for a meeting with you.',
-              time: '10 minutes ago',
-              type: 'info',
-              read: false
-            },
-            {
-              id: '2',
-              title: 'Training Completed',
-              message: 'Sarah Johnson has completed the safety training.',
-              time: '1 hour ago',
-              type: 'success',
-              read: false
-            },
-            {
-              id: '3',
-              title: 'Visitor Check-out',
-              message: 'Michael Smith has checked out.',
-              time: '3 hours ago',
-              type: 'info',
-              read: true
-            },
-            {
-              id: '4',
-              title: 'System Update',
-              message: 'The system will be updated tonight at 10 PM.',
-              time: '1 day ago',
-              type: 'warning',
-              read: true
-            }
-          ];
-
-          setNotifications(mockNotifications);
-          setIsLoading(false);
-        }, 500);
+        // For now, show empty notifications since there's no backend endpoint yet
+        // TODO: Implement real notifications API endpoint
+        setNotifications([]);
+        setIsLoading(false);
       } catch (err) {
         setError('Failed to load notifications');
         setIsLoading(false);

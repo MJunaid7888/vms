@@ -3,7 +3,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { visitorAPI, employeeAPI, Employee } from '@/lib/api';
+import { visitorAPI, employeeAPI, siteAPI, Employee, Department, MeetingLocation } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
 import { User, Phone, Mail, Building, Calendar, MapPin, FileText, Check, Search, CheckCircle, ArrowUpRight, AlertCircle, CreditCard, Clock } from 'lucide-react';
 import AppBar from '@/components/AppBar';
@@ -15,12 +15,13 @@ interface VisitorFormData {
   email: string;
   hostEmployeeId: string;
   company: string;
+  siteLocation: string;
   purpose: string;
-  address: string;
-  visitDate: string;
+  department: string;
+  meetingLocation: string;
   visitStartDate: string;
   visitEndDate: string;
-  category: 'In Patient Visitor' | 'CONTRACTORS';
+  category: 'VISITOR' | 'CONTRACTOR';
   agreed: boolean;
 }
 
@@ -32,12 +33,13 @@ export default function VisitorForm() {
     email: '',
     hostEmployeeId: '',
     company: '',
+    siteLocation: '',
     purpose: '',
-    address: '',
-    visitDate: new Date().toISOString().split('T')[0],
-    visitStartDate: new Date().toISOString().split('T')[0],
-    visitEndDate: new Date().toISOString().split('T')[0],
-    category: 'In Patient Visitor',
+    department: '',
+    meetingLocation: '',
+    visitStartDate: new Date().toISOString().slice(0, 16),
+    visitEndDate: new Date().toISOString().slice(0, 16),
+    category: 'VISITOR',
     agreed: false,
   });
 
@@ -48,6 +50,12 @@ export default function VisitorForm() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [response, setResponse] = useState<any>(null);
 
+  // State for departments and meeting locations
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [meetingLocations, setMeetingLocations] = useState<MeetingLocation[]>([]);
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
+  const [loadingMeetingLocations, setLoadingMeetingLocations] = useState(false);
+
   // Return visitor search
   const [searchEmail, setSearchEmail] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -55,20 +63,35 @@ export default function VisitorForm() {
 
   const { user, token } = useAuth();
 
-  // Fetch employees when component mounts and check for returning visitor
+  // Fetch employees, departments, and meeting locations when component mounts
   useEffect(() => {
-    const fetchEmployees = async () => {
+    const fetchData = async () => {
       if (token) {
         try {
-          const data = await employeeAPI.getEmployees(token);
-          setEmployees(data);
+          // Fetch employees
+          const employeeData = await employeeAPI.getEmployees(token);
+          setEmployees(employeeData);
+
+          // Fetch departments
+          setLoadingDepartments(true);
+          const departmentData = await siteAPI.getAllDepartments(token);
+          setDepartments(departmentData);
+          setLoadingDepartments(false);
+
+          // Fetch meeting locations
+          setLoadingMeetingLocations(true);
+          const locationData = await siteAPI.getAllMeetingLocations(token);
+          setMeetingLocations(locationData);
+          setLoadingMeetingLocations(false);
         } catch (err) {
-          console.error('Failed to fetch employees:', err);
+          console.error('Failed to fetch data:', err);
+          setLoadingDepartments(false);
+          setLoadingMeetingLocations(false);
         }
       }
     };
 
-    fetchEmployees();
+    fetchData();
 
     // Check if there's a returning visitor from the been-here-before page
     if (typeof window !== 'undefined') {
@@ -135,8 +158,8 @@ export default function VisitorForm() {
       } else {
         // Sort results by visit date (most recent first)
         results.sort((a, b) => {
-          const dateA = new Date(a.visitDate || a.checkInTime || 0);
-          const dateB = new Date(b.visitDate || b.checkInTime || 0);
+          const dateA = new Date(a.visitStartDate || a.checkInTime || 0);
+          const dateB = new Date(b.visitStartDate || b.checkInTime || 0);
           return dateB.getTime() - dateA.getTime();
         });
 
@@ -161,12 +184,13 @@ export default function VisitorForm() {
       email: visitor.email,
       hostEmployeeId: visitor.hostEmployee,
       company: visitor.company || '',
+      siteLocation: visitor.siteLocation || '',
       purpose: '',  // Clear purpose for new visit
-      address: visitor.address || formData.address, // Use visitor's address if available
-      visitDate: new Date().toISOString().split('T')[0],
-      visitStartDate: visitor.visitStartDate || new Date().toISOString().split('T')[0],
-      visitEndDate: visitor.visitEndDate || new Date().toISOString().split('T')[0],
-      category: visitor.category || 'In Patient Visitor',
+      department: visitor.department || '',
+      meetingLocation: visitor.meetingLocation || '',
+      visitStartDate: new Date().toISOString().slice(0, 16),
+      visitEndDate: new Date().toISOString().slice(0, 16),
+      category: visitor.category === 'CONTRACTOR' ? 'CONTRACTOR' : 'VISITOR',
       agreed: false, // Require agreement again
     });
 
@@ -207,8 +231,10 @@ export default function VisitorForm() {
         email: formData.email || '', // API requires email to be a string
         hostEmployeeId: formData.hostEmployeeId,
         company: formData.company || '',
+        siteLocation: formData.siteLocation || '',
         purpose: formData.purpose,
-        visitDate: formData.visitDate,
+        department: formData.department,
+        meetingLocation: formData.meetingLocation,
         visitStartDate: formData.visitStartDate,
         visitEndDate: formData.visitEndDate,
         category: formData.category,
@@ -235,7 +261,7 @@ export default function VisitorForm() {
       // Get host name from employees list
       const hostName = employees.find(e => e.id === formData.hostEmployeeId)?.name || 'your host';
 
-      setSuccess(`Your visit has been scheduled successfully! Please check in at the reception desk when you arrive. ${hostName} has been notified of your upcoming visit on ${new Date(formData.visitDate).toLocaleDateString()}.`);
+      setSuccess(`Your visit has been scheduled successfully! Please check in at the reception desk when you arrive. ${hostName} has been notified of your upcoming visit on ${new Date(formData.visitStartDate).toLocaleDateString()}.`);
 
       // Reset form
       setFormData({
@@ -245,12 +271,13 @@ export default function VisitorForm() {
         email: '',
         hostEmployeeId: '',
         company: '',
+        siteLocation: '',
         purpose: '',
-        address: '',
-        visitDate: new Date().toISOString().split('T')[0],
-        visitStartDate: new Date().toISOString().split('T')[0],
-        visitEndDate: new Date().toISOString().split('T')[0],
-        category: 'In Patient Visitor',
+        department: '',
+        meetingLocation: '',
+        visitStartDate: new Date().toISOString().slice(0, 16),
+        visitEndDate: new Date().toISOString().slice(0, 16),
+        category: 'VISITOR',
         agreed: false,
       });
 
@@ -319,12 +346,13 @@ export default function VisitorForm() {
                       email: '',
                       hostEmployeeId: '',
                       company: '',
+                      siteLocation: '',
                       purpose: '',
-                      address: '',
-                      visitDate: new Date().toISOString().split('T')[0],
-                      visitStartDate: new Date().toISOString().split('T')[0],
-                      visitEndDate: new Date().toISOString().split('T')[0],
-                      category: 'In Patient Visitor',
+                      department: '',
+                      meetingLocation: '',
+                      visitStartDate: new Date().toISOString().slice(0, 16),
+                      visitEndDate: new Date().toISOString().slice(0, 16),
+                      category: 'VISITOR',
                       agreed: false,
                     })}
                     className="bg-green-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium hover:bg-green-700 transition-colors"
@@ -622,22 +650,7 @@ export default function VisitorForm() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Visit Date*</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="date"
-                    name="visitDate"
-                    required
-                    value={formData.visitDate}
-                    onChange={handleChange}
-                    className="w-full pl-9 sm:pl-10 px-3 sm:px-4 py-2.5 sm:py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:bg-gray-50 transition-colors"
-                  />
-                </div>
-              </div>
+
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Visit Start Date & Time*</label>
@@ -673,19 +686,119 @@ export default function VisitorForm() {
                 </div>
               </div>
 
+              {/* Category Selection */}
+              <div className="md:col-span-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Visitor Type*</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input
+                      type="radio"
+                      name="category"
+                      value="VISITOR"
+                      checked={formData.category === 'VISITOR'}
+                      onChange={handleChange}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    <span className="ml-2 text-sm font-medium text-gray-700">Visitor</span>
+                  </label>
+                  <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input
+                      type="radio"
+                      name="category"
+                      value="CONTRACTOR"
+                      checked={formData.category === 'CONTRACTOR'}
+                      onChange={handleChange}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    <span className="ml-2 text-sm font-medium text-gray-700">Contractor</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Conditional Company and Site Location for Contractors */}
+              {formData.category === 'CONTRACTOR' && (
+                <>
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Company*</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Building className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+                      </div>
+                      <input
+                        name="company"
+                        required={formData.category === 'CONTRACTOR'}
+                        value={formData.company}
+                        onChange={handleChange}
+                        placeholder="Company name"
+                        className="w-full pl-9 sm:pl-10 px-3 sm:px-4 py-2.5 sm:py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:bg-gray-50 transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Site Location*</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+                      </div>
+                      <input
+                        name="siteLocation"
+                        required={formData.category === 'CONTRACTOR'}
+                        value={formData.siteLocation}
+                        onChange={handleChange}
+                        placeholder="Site location"
+                        className="w-full pl-9 sm:pl-10 px-3 sm:px-4 py-2.5 sm:py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:bg-gray-50 transition-colors"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Department Selection */}
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Address</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Department*</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Building className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+                  </div>
+                  <select
+                    name="department"
+                    required
+                    value={formData.department}
+                    onChange={handleChange}
+                    className="w-full pl-9 sm:pl-10 px-3 sm:px-4 py-2.5 sm:py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:bg-gray-50 transition-colors"
+                  >
+                    <option value="">Select Department</option>
+                    {departments.map((dept) => (
+                      <option key={dept._id} value={dept.name}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Meeting Location Selection */}
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Meeting Location*</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                   </div>
-                  <input
-                    name="address"
-                    value={formData.address}
+                  <select
+                    name="meetingLocation"
+                    required
+                    value={formData.meetingLocation}
                     onChange={handleChange}
-                    placeholder="Your address"
                     className="w-full pl-9 sm:pl-10 px-3 sm:px-4 py-2.5 sm:py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:bg-gray-50 transition-colors"
-                  />
+                  >
+                    <option value="">Select Meeting Location</option>
+                    {meetingLocations.map((location) => (
+                      <option key={location._id} value={location.name}>
+                        {location.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>

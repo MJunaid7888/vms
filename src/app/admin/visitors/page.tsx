@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { visitorAPI, Visitor } from '@/lib/api';
-import { Users, Search, AlertCircle, CheckCircle, XCircle, Eye, FileText } from 'lucide-react';
+import { visitorAPI, siteAPI, Visitor, Department, MeetingLocation } from '@/lib/api';
+import { Users, Search, AlertCircle, CheckCircle, XCircle, Eye, FileText, Check, X, Download, Filter } from 'lucide-react';
 import Link from 'next/link';
 
 export default function VisitorsPage() {
@@ -14,20 +14,31 @@ export default function VisitorsPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState<string | null>(null);
+
+  // New state for filtering and approval
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [departmentFilter, setDepartmentFilter] = useState<string>('all');
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [approvingVisitor, setApprovingVisitor] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+
   const { user, token } = useAuth();
 
   useEffect(() => {
     if (token) {
       fetchVisitors();
+      fetchDepartments();
     }
   }, [token]);
 
   useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredVisitors(visitors);
-    } else {
+    let filtered = visitors;
+
+    // Apply search filter
+    if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase();
-      const filtered = visitors.filter(
+      filtered = filtered.filter(
         (visitor) =>
           visitor.firstName.toLowerCase().includes(query) ||
           visitor.lastName.toLowerCase().includes(query) ||
@@ -36,9 +47,25 @@ export default function VisitorsPage() {
           (visitor.hostEmployee && visitor.hostEmployee.toLowerCase().includes(query)) ||
           (visitor.purpose && visitor.purpose.toLowerCase().includes(query))
       );
-      setFilteredVisitors(filtered);
     }
-  }, [searchQuery, visitors]);
+
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(visitor => visitor.status === statusFilter);
+    }
+
+    // Apply category filter
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(visitor => visitor.category === categoryFilter);
+    }
+
+    // Apply department filter
+    if (departmentFilter !== 'all') {
+      filtered = filtered.filter(visitor => visitor.department === departmentFilter);
+    }
+
+    setFilteredVisitors(filtered);
+  }, [searchQuery, visitors, statusFilter, categoryFilter, departmentFilter]);
 
   const fetchVisitors = async () => {
     if (!token) return;
@@ -47,7 +74,10 @@ export default function VisitorsPage() {
     setError(null);
 
     try {
-      const visitorData = await visitorAPI.getVisitorsByHost(token);
+      // For admin users, get all visitors; for others, get only their hosted visitors
+      const visitorData = user?.role === 'admin' || user?.role === 'manager'
+        ? await visitorAPI.getVisitHistory(token)
+        : await visitorAPI.getVisitorsByHost(token);
       setVisitors(visitorData);
       setFilteredVisitors(visitorData);
     } catch (err) {
@@ -55,6 +85,75 @@ export default function VisitorsPage() {
       setError(err instanceof Error ? err.message : 'Failed to load visitors');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchDepartments = async () => {
+    if (!token) return;
+
+    try {
+      const departmentData = await siteAPI.getAllDepartments(token);
+      setDepartments(departmentData);
+    } catch (err) {
+      console.error('Error fetching departments:', err);
+    }
+  };
+
+  const handleApproveVisitor = async (visitorId: string, approved: boolean) => {
+    if (!token) return;
+
+    setApprovingVisitor(visitorId);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      await visitorAPI.approveVisitor(visitorId, approved, token);
+
+      // Update local state
+      setVisitors(prev =>
+        prev.map(visitor =>
+          visitor._id === visitorId
+            ? { ...visitor, status: approved ? 'approved' : 'cancelled' }
+            : visitor
+        )
+      );
+
+      setSuccessMessage(`Visitor ${approved ? 'approved' : 'rejected'} successfully`);
+    } catch (err) {
+      console.error('Error approving visitor:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update visitor status');
+    } finally {
+      setApprovingVisitor(null);
+    }
+  };
+
+  const handleExportToExcel = async () => {
+    if (!token) return;
+
+    try {
+      const filters = {
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        category: categoryFilter !== 'all' ? categoryFilter : undefined,
+        department: departmentFilter !== 'all' ? departmentFilter : undefined,
+      };
+
+      const blob = await visitorAPI.exportToExcel(token, filters);
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `visitor-report-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      setSuccessMessage('Report exported successfully');
+    } catch (err) {
+      console.error('Error exporting report:', err);
+      setError(err instanceof Error ? err.message : 'Failed to export report');
     }
   };
 
@@ -88,7 +187,9 @@ export default function VisitorsPage() {
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
-      case 'scheduled':
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'approved':
         return 'bg-blue-100 text-blue-800';
       case 'checked-in':
         return 'bg-green-100 text-green-800';
@@ -103,14 +204,16 @@ export default function VisitorsPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'scheduled':
+      case 'pending':
+        return <AlertCircle className="h-4 w-4" />;
+      case 'approved':
         return <Users className="h-4 w-4" />;
       case 'checked-in':
         return <CheckCircle className="h-4 w-4" />;
       case 'checked-out':
         return <XCircle className="h-4 w-4" />;
       case 'cancelled':
-        return <AlertCircle className="h-4 w-4" />;
+        return <X className="h-4 w-4" />;
       default:
         return <Users className="h-4 w-4" />;
     }
@@ -148,7 +251,21 @@ export default function VisitorsPage() {
             Manage all visitors and their check-in/check-out status
           </p>
         </div>
-        <div className="mt-4 sm:mt-0">
+        <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={handleExportToExcel}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+            Export to Excel
+          </button>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <Filter className="mr-2 h-4 w-4" aria-hidden="true" />
+            Filters
+          </button>
           <Link
             href="/admin/visitors/add"
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -158,6 +275,57 @@ export default function VisitorsPage() {
           </Link>
         </div>
       </div>
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="mb-6 bg-white shadow-md rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Filters</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="checked-in">Checked In</option>
+                <option value="checked-out">Checked Out</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">All Categories</option>
+                <option value="VISITOR">Visitor</option>
+                <option value="CONTRACTOR">Contractor</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
+              <select
+                value={departmentFilter}
+                onChange={(e) => setDepartmentFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">All Departments</option>
+                {departments.map((dept) => (
+                  <option key={dept._id} value={dept.name}>
+                    {dept.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
 
         {error && (
           <div
@@ -232,10 +400,10 @@ export default function VisitorsPage() {
                         Visitor
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Host
+                        Host & Department
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Visit Date
+                        Visit Details
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Category
@@ -267,10 +435,18 @@ export default function VisitorsPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {visitor.hostEmployee || '—'}
+                          <div>
+                            <div className="font-medium text-gray-900">{visitor.hostEmployee || '—'}</div>
+                            <div className="text-gray-500">{visitor.department || '—'}</div>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(visitor.visitDate)}
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {formatDate(visitor.visitStartDate)} - {formatDate(visitor.visitEndDate)}
+                            </div>
+                            <div className="text-gray-500">{visitor.meetingLocation || '—'}</div>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {visitor.category || 'Not specified'}
@@ -286,21 +462,49 @@ export default function VisitorsPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-3">
+                          <div className="flex space-x-2">
                             <Link
                               href={`/admin/visitors/${visitor._id}`}
                               className="text-blue-600 hover:text-blue-900"
                               aria-label={`View details for ${visitor.firstName} ${visitor.lastName}`}
                             >
-                              <Eye className="h-5 w-5" aria-hidden="true" />
+                              <Eye className="h-4 w-4" aria-hidden="true" />
                             </Link>
                             <Link
                               href={`/admin/documents?visitorId=${visitor._id}`}
                               className="text-green-600 hover:text-green-900"
                               aria-label={`View documents for ${visitor.firstName} ${visitor.lastName}`}
                             >
-                              <FileText className="h-5 w-5" aria-hidden="true" />
+                              <FileText className="h-4 w-4" aria-hidden="true" />
                             </Link>
+
+                            {/* Approval buttons for pending visitors */}
+                            {visitor.status === 'pending' && (user?.role === 'admin' || user?.role === 'manager') && (
+                              <>
+                                <button
+                                  onClick={() => handleApproveVisitor(visitor._id, true)}
+                                  disabled={approvingVisitor === visitor._id}
+                                  className="text-green-600 hover:text-green-900 disabled:text-green-300 disabled:cursor-not-allowed"
+                                  aria-label={`Approve ${visitor.firstName} ${visitor.lastName}`}
+                                >
+                                  {approvingVisitor === visitor._id ? (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-green-600" aria-hidden="true"></div>
+                                  ) : (
+                                    <Check className="h-4 w-4" aria-hidden="true" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => handleApproveVisitor(visitor._id, false)}
+                                  disabled={approvingVisitor === visitor._id}
+                                  className="text-red-600 hover:text-red-900 disabled:text-red-300 disabled:cursor-not-allowed"
+                                  aria-label={`Reject ${visitor.firstName} ${visitor.lastName}`}
+                                >
+                                  <X className="h-4 w-4" aria-hidden="true" />
+                                </button>
+                              </>
+                            )}
+
+                            {/* Check out button for checked-in visitors */}
                             {visitor.status === 'checked-in' && (
                               <button
                                 onClick={() => handleCheckOut(visitor._id)}
@@ -309,9 +513,9 @@ export default function VisitorsPage() {
                                 aria-label={`Check out ${visitor.firstName} ${visitor.lastName}`}
                               >
                                 {checkingOut === visitor._id ? (
-                                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-red-600" aria-hidden="true"></div>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-red-600" aria-hidden="true"></div>
                                 ) : (
-                                  <XCircle className="h-5 w-5" aria-hidden="true" />
+                                  <XCircle className="h-4 w-4" aria-hidden="true" />
                                 )}
                               </button>
                             )}
@@ -359,8 +563,8 @@ export default function VisitorsPage() {
                         </div>
 
                         <div>
-                          <span className="font-medium text-gray-500">Visit Date:</span>
-                          <div className="mt-1 text-gray-900">{formatDate(visitor.visitDate)}</div>
+                          <span className="font-medium text-gray-500">Department:</span>
+                          <div className="mt-1 text-gray-900">{visitor.department || '—'}</div>
                         </div>
 
                         <div>
@@ -369,16 +573,20 @@ export default function VisitorsPage() {
                         </div>
 
                         <div>
-                          <span className="font-medium text-gray-500">Visit Time:</span>
+                          <span className="font-medium text-gray-500">Meeting Location:</span>
+                          <div className="mt-1 text-gray-900">{visitor.meetingLocation || '—'}</div>
+                        </div>
+
+                        <div className="col-span-2">
+                          <span className="font-medium text-gray-500">Visit Period:</span>
                           <div className="mt-1 text-gray-900">
-                            {visitor.visitStartDate ? new Date(visitor.visitStartDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'} -
-                            {visitor.visitEndDate ? new Date(visitor.visitEndDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}
+                            {formatDate(visitor.visitStartDate)} - {formatDate(visitor.visitEndDate)}
                           </div>
                         </div>
                       </div>
 
                       <div className="mt-3 flex justify-between items-center">
-                        <div className="flex space-x-4">
+                        <div className="flex space-x-3">
                           <Link
                             href={`/admin/visitors/${visitor._id}`}
                             className="text-blue-600 hover:text-blue-900 flex items-center"
@@ -397,26 +605,59 @@ export default function VisitorsPage() {
                           </Link>
                         </div>
 
-                        {visitor.status === 'checked-in' && (
-                          <button
-                            onClick={() => handleCheckOut(visitor._id)}
-                            disabled={checkingOut === visitor._id}
-                            className="text-red-600 hover:text-red-900 disabled:text-red-300 disabled:cursor-not-allowed flex items-center"
-                            aria-label={`Check out ${visitor.firstName} ${visitor.lastName}`}
-                          >
-                            {checkingOut === visitor._id ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-red-600 mr-1" aria-hidden="true"></div>
-                                <span>Processing...</span>
-                              </>
-                            ) : (
-                              <>
-                                <XCircle className="h-4 w-4 mr-1" aria-hidden="true" />
-                                <span>Check Out</span>
-                              </>
-                            )}
-                          </button>
-                        )}
+                        <div className="flex space-x-2">
+                          {/* Approval buttons for pending visitors */}
+                          {visitor.status === 'pending' && (user?.role === 'admin' || user?.role === 'manager') && (
+                            <>
+                              <button
+                                onClick={() => handleApproveVisitor(visitor._id, true)}
+                                disabled={approvingVisitor === visitor._id}
+                                className="text-green-600 hover:text-green-900 disabled:text-green-300 disabled:cursor-not-allowed flex items-center"
+                                aria-label={`Approve ${visitor.firstName} ${visitor.lastName}`}
+                              >
+                                {approvingVisitor === visitor._id ? (
+                                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-green-600" aria-hidden="true"></div>
+                                ) : (
+                                  <>
+                                    <Check className="h-4 w-4 mr-1" aria-hidden="true" />
+                                    <span>Approve</span>
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleApproveVisitor(visitor._id, false)}
+                                disabled={approvingVisitor === visitor._id}
+                                className="text-red-600 hover:text-red-900 disabled:text-red-300 disabled:cursor-not-allowed flex items-center"
+                                aria-label={`Reject ${visitor.firstName} ${visitor.lastName}`}
+                              >
+                                <X className="h-4 w-4 mr-1" aria-hidden="true" />
+                                <span>Reject</span>
+                              </button>
+                            </>
+                          )}
+
+                          {/* Check out button for checked-in visitors */}
+                          {visitor.status === 'checked-in' && (
+                            <button
+                              onClick={() => handleCheckOut(visitor._id)}
+                              disabled={checkingOut === visitor._id}
+                              className="text-red-600 hover:text-red-900 disabled:text-red-300 disabled:cursor-not-allowed flex items-center"
+                              aria-label={`Check out ${visitor.firstName} ${visitor.lastName}`}
+                            >
+                              {checkingOut === visitor._id ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-red-600 mr-1" aria-hidden="true"></div>
+                                  <span>Processing...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <XCircle className="h-4 w-4 mr-1" aria-hidden="true" />
+                                  <span>Check Out</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </li>
                   ))}

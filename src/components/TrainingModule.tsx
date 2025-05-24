@@ -67,22 +67,14 @@ export default function TrainingModule({ visitorId, token, onComplete, onClose }
             setSelectedAnswers(Array(trainingsResponse[0].questions.length).fill(-1));
             setTrainingStatus('in_progress');
           } else {
-            // Create mock training if API doesn't return any
-            const mockTraining = createMockTraining();
-            setTrainings([mockTraining]);
-            setCurrentTraining(mockTraining);
-            setSelectedAnswers(Array(mockTraining.questions.length).fill(-1));
-            setTrainingStatus('in_progress');
+            // No trainings available
+            setError('No training modules available');
+            setTrainingStatus('not_available');
           }
         } catch (trainingsError) {
           console.error('Error fetching trainings:', trainingsError);
-
-          // Create mock training as fallback
-          const mockTraining = createMockTraining();
-          setTrainings([mockTraining]);
-          setCurrentTraining(mockTraining);
-          setSelectedAnswers(Array(mockTraining.questions.length).fill(-1));
-          setTrainingStatus('in_progress');
+          setError('Failed to load training modules');
+          setTrainingStatus('not_available');
         }
       } catch (err) {
         console.error('Error in training module:', err);
@@ -95,50 +87,7 @@ export default function TrainingModule({ visitorId, token, onComplete, onClose }
     fetchData();
   }, [visitorId, token]);
 
-  // Create a mock training for testing when API fails
-  const createMockTraining = (): Training => {
-    return {
-      _id: 'mock-training-1',
-      title: 'Safety Training',
-      description: 'Basic safety procedures for visitors',
-      type: 'safety',
-      content: 'Safety is our top priority. Please complete this training to ensure you understand our safety procedures.',
-      questions: [
-        {
-          question: 'What should you do in case of a fire?',
-          options: [
-            'Continue working',
-            'Follow the evacuation plan and exit the building',
-            'Hide under a desk',
-            'Call your supervisor'
-          ],
-          correctAnswer: 1
-        },
-        {
-          question: 'Where are fire extinguishers located?',
-          options: [
-            'Only in the security office',
-            'Near emergency exits',
-            'In the cafeteria',
-            'There are no fire extinguishers'
-          ],
-          correctAnswer: 1
-        },
-        {
-          question: 'What should you wear in restricted areas?',
-          options: [
-            'Business casual attire',
-            'Whatever is comfortable',
-            'Appropriate PPE (Personal Protective Equipment)',
-            'No special requirements'
-          ],
-          correctAnswer: 2
-        }
-      ],
-      requiredScore: 70,
-      isActive: true
-    };
-  };
+
 
   const handleAnswerSelection = (questionIndex: number, answerIndex: number) => {
     const newSelectedAnswers = [...selectedAnswers];

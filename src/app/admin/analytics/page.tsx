@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/AuthContext';
 import { analyticsAPI } from '@/lib/api';
-import { ArrowLeft, BarChart2, PieChart, Users, Calendar, Clock, LogOut } from 'lucide-react';
+import { ArrowLeft, BarChart2, PieChart, Users, Calendar, Clock } from 'lucide-react';
 import VisitorChart from '@/components/charts/VisitorChart';
 
 interface VisitorMetrics {
@@ -45,17 +45,12 @@ interface TrainingMetrics {
   }[];
 }
 
-interface SystemMetrics {
-  totalUsers: number;
-  activeUsers: number;
-  totalEmployees: number;
-}
+
 
 export default function AnalyticsDashboard() {
   const [visitorMetrics, setVisitorMetrics] = useState<VisitorMetrics | null>(null);
   const [accessMetrics, setAccessMetrics] = useState<AccessMetrics | null>(null);
   const [trainingMetrics, setTrainingMetrics] = useState<TrainingMetrics | null>(null);
-  const [systemMetrics, setSystemMetrics] = useState<SystemMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [dateRange, setDateRange] = useState({
@@ -83,17 +78,26 @@ export default function AnalyticsDashboard() {
         setError('');
 
         // Fetch all metrics in parallel
-        const [visitorData, accessData, trainingData, systemData] = await Promise.all([
-          analyticsAPI.getVisitorMetrics(token, dateRange.startDate, dateRange.endDate),
-          analyticsAPI.getAccessMetrics(token, dateRange.startDate, dateRange.endDate),
-          analyticsAPI.getTrainingMetrics(token, dateRange.startDate, dateRange.endDate),
-          analyticsAPI.getSystemMetrics(token),
+        const [visitorData, accessData, trainingData] = await Promise.all([
+          analyticsAPI.getVisitorStats(token),
+          analyticsAPI.getAccessMetrics(token),
+          analyticsAPI.getTrainingMetrics(token),
         ]);
 
-        setVisitorMetrics(visitorData as VisitorMetrics);
+        // Transform visitor data to match interface
+        const transformedVisitorData: VisitorMetrics = {
+          totalVisitors: visitorData.total,
+          checkedIn: visitorData.checkedIn,
+          checkedOut: visitorData.checkedOut,
+          scheduled: visitorData.scheduled,
+          cancelled: 0, // Default value
+          visitorsByDay: [], // Default empty array
+          visitorsByPurpose: [] // Default empty array
+        };
+
+        setVisitorMetrics(transformedVisitorData);
         setAccessMetrics(accessData as AccessMetrics);
         setTrainingMetrics(trainingData as TrainingMetrics);
-        setSystemMetrics(systemData as SystemMetrics);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch analytics data');
       } finally {

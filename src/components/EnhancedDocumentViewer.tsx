@@ -3,24 +3,21 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { documentAPI, Document } from '@/lib/api';
-import { 
-  File, 
-  FileText, 
-  Download, 
-  Trash2, 
-  AlertCircle, 
-  CheckCircle, 
-  Search, 
-  Filter, 
-  Eye, 
-  X, 
+import {
+  File,
+  FileText,
+  Download,
+  Trash2,
+  AlertCircle,
+  CheckCircle,
+  Search,
+  Filter,
+  Eye,
+  X,
   Image as ImageIcon,
   FileArchive,
-  FilePdf,
   FileCode,
   FileSpreadsheet,
-  FilePresentation,
-  FileText2,
   FileImage,
   FileVideo,
   FileAudio,
@@ -61,8 +58,8 @@ export default function EnhancedDocumentViewer({ visitorId, onDocumentDeleted }:
     // Apply search
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(doc => 
-        doc.fileName.toLowerCase().includes(query) || 
+      filtered = filtered.filter(doc =>
+        doc.fileName.toLowerCase().includes(query) ||
         (doc.description && doc.description.toLowerCase().includes(query))
       );
     }
@@ -75,7 +72,7 @@ export default function EnhancedDocumentViewer({ visitorId, onDocumentDeleted }:
     // Apply sorting
     filtered.sort((a, b) => {
       let comparison = 0;
-      
+
       switch (sortBy) {
         case 'date':
           comparison = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime();
@@ -126,7 +123,7 @@ export default function EnhancedDocumentViewer({ visitorId, onDocumentDeleted }:
       await documentAPI.deleteDocument(documentId, token);
       setDocuments(prev => prev.filter(doc => doc._id !== documentId));
       setSuccessMessage('Document deleted successfully');
-      
+
       if (onDocumentDeleted) {
         onDocumentDeleted();
       }
@@ -152,11 +149,11 @@ export default function EnhancedDocumentViewer({ visitorId, onDocumentDeleted }:
   const getDocumentTypeIcon = (type: string) => {
     switch (type) {
       case 'id':
-        return <FileText2 className="h-5 w-5 text-blue-600" />;
+        return <FileText className="h-5 w-5 text-blue-600" />;
       case 'nda':
-        return <FilePdf className="h-5 w-5 text-red-600" />;
+        return <FileText className="h-5 w-5 text-red-600" />;
       case 'training':
-        return <FilePresentation className="h-5 w-5 text-green-600" />;
+        return <FileText className="h-5 w-5 text-green-600" />;
       default:
         return <FileText className="h-5 w-5 text-gray-600" />;
     }
@@ -164,19 +161,19 @@ export default function EnhancedDocumentViewer({ visitorId, onDocumentDeleted }:
 
   const getFileTypeIcon = (fileName: string) => {
     const extension = fileName.split('.').pop()?.toLowerCase() || '';
-    
+
     switch (extension) {
       case 'pdf':
-        return <FilePdf className="h-5 w-5 text-red-600" />;
+        return <FileText className="h-5 w-5 text-red-600" />;
       case 'doc':
       case 'docx':
-        return <FileText2 className="h-5 w-5 text-blue-600" />;
+        return <FileText className="h-5 w-5 text-blue-600" />;
       case 'xls':
       case 'xlsx':
         return <FileSpreadsheet className="h-5 w-5 text-green-600" />;
       case 'ppt':
       case 'pptx':
-        return <FilePresentation className="h-5 w-5 text-orange-600" />;
+        return <FileText className="h-5 w-5 text-orange-600" />;
       case 'jpg':
       case 'jpeg':
       case 'png':
@@ -242,10 +239,10 @@ export default function EnhancedDocumentViewer({ visitorId, onDocumentDeleted }:
                 <X className="h-6 w-6" />
               </button>
             </div>
-            
+
             <div className="flex-1 overflow-auto min-h-0 bg-gray-100 rounded-lg p-4">
               {isPreviewable(previewDocument.fileName) ? (
-                <iframe 
+                <iframe
                   src={`${process.env.NEXT_PUBLIC_API_URL}/documents/${previewDocument._id}?token=${token}`}
                   className="w-full h-full min-h-[500px] border-0 rounded"
                   title={previewDocument.fileName}
@@ -268,7 +265,7 @@ export default function EnhancedDocumentViewer({ visitorId, onDocumentDeleted }:
                 </div>
               )}
             </div>
-            
+
             <div className="mt-4 bg-gray-50 p-4 rounded-lg">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>

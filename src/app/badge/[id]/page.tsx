@@ -62,29 +62,12 @@ export default function VisitorBadgePage() {
         } catch (visitorErr) {
           console.error('Error fetching visitor:', visitorErr);
 
-          // If the error is due to authentication, try to create a mock visitor for public viewing
+          // If the error is due to authentication, show error message
           if (visitorErr instanceof Error && visitorErr.message.includes('authentication')) {
-            console.warn('Authentication error, creating mock visitor for public viewing');
-
-            // Create a mock visitor with limited information
-            // This allows the badge to be viewed without authentication
-            setVisitor({
-              _id: visitorId,
-              firstName: 'Visitor',
-              lastName: 'Information',
-              email: '',
-              phoneNumber: '',
-              purpose: 'Visit',
-              hostEmployee: '',
-              status: 'scheduled',
-              visitDate: new Date().toISOString(),
-              visitStartDate: new Date().toISOString(),
-              visitEndDate: new Date().toISOString(),
-              category: 'In Patient Visitor',
-            });
+            console.warn('Authentication error accessing visitor badge');
+            setError('Authentication required to view visitor badge');
           } else {
-            // For other errors, show the error message
-            setError(visitorErr instanceof Error ? visitorErr.message : 'Failed to load visitor information');
+            setError('Failed to load visitor information');
           }
         }
       } catch (err) {

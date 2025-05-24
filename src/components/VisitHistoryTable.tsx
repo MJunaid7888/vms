@@ -65,14 +65,14 @@ export default function VisitHistoryTable({
             if (startDate) {
               const startDateObj = new Date(startDate);
               filteredVisitors = filteredVisitors.filter(v =>
-                new Date(v.visitDate) >= startDateObj
+                new Date(v.visitStartDate || v.visitDate) >= startDateObj
               );
             }
 
             if (endDate) {
               const endDateObj = new Date(endDate);
               filteredVisitors = filteredVisitors.filter(v =>
-                new Date(v.visitDate) <= endDateObj
+                new Date(v.visitStartDate || v.visitDate) <= endDateObj
               );
             }
 
@@ -93,19 +93,12 @@ export default function VisitHistoryTable({
           }
         } catch (visitorError) {
           console.error('Error fetching visitors as fallback:', visitorError);
+          setError('Failed to load visit history. Please check your connection and try again.');
         }
-
-        // If all else fails, create mock data
-        const mockVisits = createMockVisitData();
-        setVisits(mockVisits);
 
       } catch (err) {
         console.error('Error in visit history component:', err);
         setError(err instanceof Error ? err.message : 'Failed to load visit history');
-
-        // Still show mock data even if there's an error
-        const mockVisits = createMockVisitData();
-        setVisits(mockVisits);
       } finally {
         setIsLoading(false);
       }
@@ -114,59 +107,7 @@ export default function VisitHistoryTable({
     fetchVisitHistory();
   }, [token, visitorId, startDate, endDate, status, location]);
 
-  // Create mock visit data for testing when API fails
-  const createMockVisitData = (): Visitor[] => {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const lastWeek = new Date(today);
-    lastWeek.setDate(lastWeek.getDate() - 7);
 
-    return [
-      {
-        _id: 'mock-visit-1',
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        phoneNumber: '555-123-4567',
-        company: 'Acme Inc',
-        purpose: 'Business Meeting',
-        hostEmployee: 'Jane Smith',
-        visitDate: today.toISOString(),
-        status: 'checked-in',
-        checkInTime: new Date(today.setHours(9, 30)).toISOString(),
-        trainingCompleted: true
-      },
-      {
-        _id: 'mock-visit-2',
-        firstName: 'Alice',
-        lastName: 'Johnson',
-        email: 'alice.johnson@example.com',
-        phoneNumber: '555-987-6543',
-        company: 'Tech Solutions',
-        purpose: 'Interview',
-        hostEmployee: 'Robert Williams',
-        visitDate: yesterday.toISOString(),
-        status: 'checked-out',
-        checkInTime: new Date(yesterday.setHours(10, 0)).toISOString(),
-        checkOutTime: new Date(yesterday.setHours(11, 30)).toISOString(),
-        trainingCompleted: true
-      },
-      {
-        _id: 'mock-visit-3',
-        firstName: 'Michael',
-        lastName: 'Brown',
-        email: 'michael.brown@example.com',
-        phoneNumber: '555-456-7890',
-        company: 'Global Services',
-        purpose: 'Maintenance',
-        hostEmployee: 'Sarah Davis',
-        visitDate: lastWeek.toISOString(),
-        status: 'scheduled',
-        trainingCompleted: false
-      }
-    ];
-  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

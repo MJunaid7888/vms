@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/AuthContext';
 import { visitorAPI, Visitor } from '@/lib/api';
-import { ArrowLeft, QrCode, LogOut, Clock, BookOpen, CreditCard, FileText } from 'lucide-react';
+import { ArrowLeft, QrCode, LogOut, Clock, BookOpen, CreditCard, FileText, AlertCircle } from 'lucide-react';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
 import EnhancedTrainingModule from '@/components/EnhancedTrainingModule';
 import DocumentUploader from '@/components/DocumentUploader';
@@ -238,7 +238,7 @@ export default function VisitorDetails() {
                   {showDocuments ? 'Hide Documents' : 'Manage Documents'}
                 </button>
 
-                {visitor.status === 'scheduled' && (
+                {visitor.status === 'approved' && (
                   <button
                     onClick={handleCheckIn}
                     disabled={checkingIn || (visitor.trainingCompleted === false)}
@@ -248,6 +248,13 @@ export default function VisitorDetails() {
                     <Clock className="mr-2 h-5 w-5" />
                     {checkingIn ? 'Processing...' : 'Check In'}
                   </button>
+                )}
+
+                {visitor.status === 'pending' && (
+                  <div className="flex items-center bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg">
+                    <AlertCircle className="mr-2 h-5 w-5" />
+                    Pending Approval
+                  </div>
                 )}
 
                 {visitor.status === 'checked-in' && (
@@ -336,8 +343,12 @@ function VisitorInfo({ visitor }: { visitor: Visitor }) {
             <p className="font-medium">{visitor.hostEmployee}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Visit Date</p>
-            <p className="font-medium">{new Date(visitor.visitDate).toLocaleDateString()}</p>
+            <p className="text-sm text-gray-500">Department</p>
+            <p className="font-medium">{visitor.department || 'Not specified'}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Meeting Location</p>
+            <p className="font-medium">{visitor.meetingLocation || 'Not specified'}</p>
           </div>
           <div>
             <p className="text-sm text-gray-500">Visit Start Date & Time</p>
@@ -347,6 +358,12 @@ function VisitorInfo({ visitor }: { visitor: Visitor }) {
             <p className="text-sm text-gray-500">Visit End Date & Time</p>
             <p className="font-medium">{visitor.visitEndDate ? new Date(visitor.visitEndDate).toLocaleString() : 'Not specified'}</p>
           </div>
+          {visitor.category === 'CONTRACTOR' && visitor.siteLocation && (
+            <div>
+              <p className="text-sm text-gray-500">Site Location</p>
+              <p className="font-medium">{visitor.siteLocation}</p>
+            </div>
+          )}
           <div>
             <p className="text-sm text-gray-500">Visitor Category</p>
             <p className="font-medium">{visitor.category || 'Not specified'}</p>
@@ -355,9 +372,10 @@ function VisitorInfo({ visitor }: { visitor: Visitor }) {
             <p className="text-sm text-gray-500">Status</p>
             <p className="font-medium">
               <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                ${visitor.status === 'checked-in' ? 'bg-green-100 text-green-800' :
+                ${visitor.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  visitor.status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                  visitor.status === 'checked-in' ? 'bg-green-100 text-green-800' :
                   visitor.status === 'checked-out' ? 'bg-gray-100 text-gray-800' :
-                  visitor.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
                   'bg-red-100 text-red-800'}`}>
                 {visitor.status}
               </span>

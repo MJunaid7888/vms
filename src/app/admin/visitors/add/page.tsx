@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import AppBar from '@/components/AppBar';
-import { visitorAPI, VisitorData, employeeAPI, Employee } from '@/lib/api';
-import { ArrowLeft, Calendar, Clock, User, Building, AlertCircle, CheckCircle } from 'lucide-react';
+import { visitorAPI, VisitorData, employeeAPI, siteAPI, Employee, Department, MeetingLocation } from '@/lib/api';
+import { ArrowLeft, Calendar, Clock, User, Building, AlertCircle, CheckCircle, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AddVisitorPage() {
@@ -15,16 +15,22 @@ export default function AddVisitorPage() {
     email: '',
     phoneNumber: '',
     company: '',
+    siteLocation: '',
     purpose: '',
     hostEmployeeId: '',
-    visitDate: new Date().toISOString().split('T')[0],
-    visitStartDate: new Date().toISOString().split('T')[0],
-    visitEndDate: new Date().toISOString().split('T')[0],
-    category: 'In Patient Visitor',
+    department: '',
+    meetingLocation: '',
+    visitStartDate: new Date().toISOString().slice(0, 16),
+    visitEndDate: new Date().toISOString().slice(0, 16),
+    category: 'VISITOR',
   });
 
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [meetingLocations, setMeetingLocations] = useState<MeetingLocation[]>([]);
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
+  const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -32,25 +38,46 @@ export default function AddVisitorPage() {
   const { user, token } = useAuth();
   const router = useRouter();
 
-  // Fetch employees when component mounts
+  // Fetch data when component mounts
   useEffect(() => {
-    const fetchEmployees = async () => {
+    const fetchData = async () => {
       if (!token) return;
 
+      // Fetch employees
       setIsLoadingEmployees(true);
       try {
         const employeeData = await employeeAPI.getEmployees(token);
         setEmployees(employeeData);
       } catch (err) {
         console.error('Error fetching employees:', err);
-        // Don't set error state here to avoid confusing the user
-        // Just log to console and use empty array
       } finally {
         setIsLoadingEmployees(false);
       }
+
+      // Fetch departments
+      setIsLoadingDepartments(true);
+      try {
+        const departmentData = await siteAPI.getAllDepartments(token);
+        setDepartments(departmentData);
+      } catch (err) {
+        console.error('Error fetching departments:', err);
+      } finally {
+        setIsLoadingDepartments(false);
+      }
+
+      // Fetch meeting locations
+      setIsLoadingLocations(true);
+      try {
+        const locationData = await siteAPI.getAllMeetingLocations(token);
+        setMeetingLocations(locationData);
+      } catch (err) {
+        console.error('Error fetching meeting locations:', err);
+      } finally {
+        setIsLoadingLocations(false);
+      }
     };
 
-    fetchEmployees();
+    fetchData();
   }, [token]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -68,10 +95,18 @@ export default function AddVisitorPage() {
 
     // Validate form
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.purpose ||
-        !formData.hostEmployeeId || !formData.visitDate || !formData.visitStartDate ||
-        !formData.visitEndDate || !formData.category) {
+        !formData.hostEmployeeId || !formData.department || !formData.meetingLocation ||
+        !formData.visitStartDate || !formData.visitEndDate || !formData.category) {
       setError('Please fill in all required fields');
       return;
+    }
+
+    // Validate contractor-specific fields
+    if (formData.category === 'CONTRACTOR') {
+      if (!formData.company || !formData.siteLocation) {
+        setError('Company and site location are required for contractors');
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -81,24 +116,26 @@ export default function AddVisitorPage() {
     try {
       const visitorData = {
         ...formData,
-        status: 'scheduled',
+        status: 'pending',
       } as VisitorData;
 
       const result = await visitorAPI.scheduleVisit(visitorData, token);
 
-      setSuccessMessage('Visitor added successfully');
+      setSuccessMessage('Visitor added successfully and is pending approval');
       setFormData({
         firstName: '',
         lastName: '',
         email: '',
         phoneNumber: '',
         company: '',
+        siteLocation: '',
         purpose: '',
         hostEmployeeId: '',
-        visitDate: new Date().toISOString().split('T')[0],
-        visitStartDate: new Date().toISOString().split('T')[0],
-        visitEndDate: new Date().toISOString().split('T')[0],
-        category: 'In Patient Visitor',
+        department: '',
+        meetingLocation: '',
+        visitStartDate: new Date().toISOString().slice(0, 16),
+        visitEndDate: new Date().toISOString().slice(0, 16),
+        category: 'VISITOR',
       });
 
       // Redirect to the visitor details page after a short delay
@@ -243,23 +280,72 @@ export default function AddVisitorPage() {
               </div>
 
               <div>
-                <label htmlFor="company" className="block text-sm font-medium text-gray-700">
-                  Company
+                <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+                  Visitor Category <span className="text-red-500">*</span>
                 </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Building className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                    <User className="h-5 w-5 text-gray-400" aria-hidden="true" />
                   </div>
-                  <input
-                    type="text"
-                    id="company"
-                    name="company"
-                    value={formData.company}
+                  <select
+                    id="category"
+                    name="category"
+                    value={formData.category}
                     onChange={handleChange}
+                    required
                     className="pl-10 block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
-                  />
+                    aria-required="true"
+                  >
+                    <option value="VISITOR">Visitor</option>
+                    <option value="CONTRACTOR">Contractor</option>
+                  </select>
                 </div>
               </div>
+
+              {/* Conditional fields for contractors */}
+              {formData.category === 'CONTRACTOR' && (
+                <>
+                  <div>
+                    <label htmlFor="company" className="block text-sm font-medium text-gray-700">
+                      Company <span className="text-red-500">*</span>
+                    </label>
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Building className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                      </div>
+                      <input
+                        type="text"
+                        id="company"
+                        name="company"
+                        value={formData.company}
+                        onChange={handleChange}
+                        required={formData.category === 'CONTRACTOR'}
+                        className="pl-10 block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="siteLocation" className="block text-sm font-medium text-gray-700">
+                      Site Location <span className="text-red-500">*</span>
+                    </label>
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <MapPin className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                      </div>
+                      <input
+                        type="text"
+                        id="siteLocation"
+                        name="siteLocation"
+                        value={formData.siteLocation}
+                        onChange={handleChange}
+                        required={formData.category === 'CONTRACTOR'}
+                        className="pl-10 block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div>
                 <label htmlFor="hostEmployeeId" className="block text-sm font-medium text-gray-700">
@@ -295,23 +381,68 @@ export default function AddVisitorPage() {
               </div>
 
               <div>
-                <label htmlFor="visitDate" className="block text-sm font-medium text-gray-700">
-                  Visit Date <span className="text-red-500">*</span>
+                <label htmlFor="department" className="block text-sm font-medium text-gray-700">
+                  Department <span className="text-red-500">*</span>
                 </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Calendar className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                    <Building className="h-5 w-5 text-gray-400" aria-hidden="true" />
                   </div>
-                  <input
-                    type="date"
-                    id="visitDate"
-                    name="visitDate"
-                    value={formData.visitDate}
+                  <select
+                    id="department"
+                    name="department"
+                    value={formData.department}
                     onChange={handleChange}
                     required
                     className="pl-10 block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
                     aria-required="true"
-                  />
+                    disabled={isLoadingDepartments}
+                  >
+                    <option value="">Select a department</option>
+                    {departments.map((dept) => (
+                      <option key={dept._id} value={dept.name}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                  {isLoadingDepartments && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="meetingLocation" className="block text-sm font-medium text-gray-700">
+                  Meeting Location <span className="text-red-500">*</span>
+                </label>
+                <div className="mt-1 relative rounded-md shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MapPin className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                  </div>
+                  <select
+                    id="meetingLocation"
+                    name="meetingLocation"
+                    value={formData.meetingLocation}
+                    onChange={handleChange}
+                    required
+                    className="pl-10 block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
+                    aria-required="true"
+                    disabled={isLoadingLocations}
+                  >
+                    <option value="">Select a meeting location</option>
+                    {meetingLocations.map((location) => (
+                      <option key={location._id} value={location.name}>
+                        {location.name}
+                      </option>
+                    ))}
+                  </select>
+                  {isLoadingLocations && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -354,29 +485,6 @@ export default function AddVisitorPage() {
                     className="pl-10 block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
                     aria-required="true"
                   />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-                  Visitor Category <span className="text-red-500">*</span>
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                  </div>
-                  <select
-                    id="category"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    required
-                    className="pl-10 block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
-                    aria-required="true"
-                  >
-                    <option value="In Patient Visitor">In Patient Visitor</option>
-                    <option value="CONTRACTORS">CONTRACTORS</option>
-                  </select>
                 </div>
               </div>
 

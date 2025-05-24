@@ -87,38 +87,12 @@ export default function QRCodeDisplay({ visitorId, token, onClose }: QRCodeDispl
 
         } catch (apiError) {
           console.error('API QR code generation failed:', apiError);
-          // Continue to fallback
+          setError('Failed to generate QR code from server');
         }
-
-        // Fallback: Generate a QR code locally with a standardized format
-        // Create a JSON object with visitor information for better compatibility
-        const qrPayload = {
-          visitorId: visitorId,
-          timestamp: Date.now(),
-          type: 'visitor-pass'
-        };
-
-        // Convert to JSON string for the QR code
-        const qrData = JSON.stringify(qrPayload);
-        setQrData(qrData);
-        console.log('Generated local QR code with data:', qrData);
-        setSuccess('QR code generated locally');
 
       } catch (err) {
         console.error('Error in QR code generation:', err);
         setError(err instanceof Error ? err.message : 'Failed to generate QR code');
-
-        // Final fallback with standardized format
-        const qrPayload = {
-          visitorId: visitorId,
-          timestamp: Date.now(),
-          type: 'visitor-pass',
-          fallback: true
-        };
-
-        // Convert to JSON string for the QR code
-        const qrData = JSON.stringify(qrPayload);
-        setQrData(qrData);
       } finally {
         setIsLoading(false);
       }

@@ -26,10 +26,12 @@ export interface VisitorData {
   hostEmployeeId: string; // This is what the API expects according to Swagger
   hostEmployee?: string;  // This is used in some components, but should be mapped to hostEmployeeId
   company?: string;
-  visitDate: string;
+  siteLocation?: string;
+  department: string;
+  meetingLocation: string;
   visitStartDate: string;
   visitEndDate: string;
-  category: 'In Patient Visitor' | 'CONTRACTORS';
+  category: 'VISITOR' | 'CONTRACTOR';
 }
 
 export interface User {
@@ -54,15 +56,21 @@ export interface Visitor {
   purpose: string;
   hostEmployee: string;
   company?: string;
+  siteLocation?: string;
+  department: string;
+  meetingLocation: string;
   checkInTime?: string;
   checkOutTime?: string;
-  status: 'scheduled' | 'checked-in' | 'checked-out' | 'cancelled';
-  visitDate: string;
+  status: 'pending' | 'approved' | 'checked-in' | 'checked-out' | 'cancelled';
   visitStartDate: string;
   visitEndDate: string;
-  category: 'In Patient Visitor' | 'CONTRACTORS';
+  category: 'VISITOR' | 'CONTRACTOR';
   qrCode?: string;
   trainingCompleted?: boolean;
+  approvedBy?: string;
+  approvedAt?: string;
+  notificationSent?: boolean;
+  approvalNotificationSent?: boolean;
 }
 
 export interface ApiResponse<T> {
@@ -353,9 +361,8 @@ export const visitorAPI = {
   // New endpoint: Get visit history
   getVisitHistory: async (token: string, startDate?: string, endDate?: string, status?: string, location?: string): Promise<Visitor[]> => {
     try {
-      // The correct endpoint according to Swagger is /visitors/host with query parameters
-      // NOT /visitors/visits which is causing the error
-      let url = `${API_BASE_URL}/visitors/host`;
+      // Use the correct endpoint from backend routes
+      let url = `${API_BASE_URL}/visitors/visits`;
       const params = new URLSearchParams();
 
       if (startDate) params.append('startDate', startDate);
@@ -384,18 +391,15 @@ export const visitorAPI = {
   // New endpoint: Get visit history for a specific visitor
   getVisitorHistory: async (visitorId: string, token: string): Promise<Visitor[]> => {
     try {
-      // According to Swagger, we should use the visitor ID directly
-      // NOT /visitors/visits/{visitorId} which is causing the error
-      const response = await fetch(`${API_BASE_URL}/visitors/${visitorId}`, {
+      // Use the correct endpoint from backend routes
+      const response = await fetch(`${API_BASE_URL}/visitors/visits/${visitorId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
 
-      // The endpoint returns a single visitor, but we need to return an array for consistency
-      const visitor = await handleResponse<Visitor>(response);
-      return [visitor];
+      return handleResponse(response);
     } catch (error) {
       console.error('Get visitor history error:', error);
       throw error;
@@ -480,6 +484,65 @@ export const visitorAPI = {
       } else {
         throw new Error('Failed to search for visitors. Please try again later.');
       }
+    }
+  },
+
+  // Approve or reject visitor
+  approveVisitor: async (visitorId: string, approved: boolean, token: string): Promise<Visitor> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/visitors/${visitorId}/approve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ approved }),
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Approve visitor error:', error);
+      throw error;
+    }
+  },
+
+  // Export visitors to Excel
+  exportToExcel: async (token: string, filters?: {
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+    category?: string;
+    department?: string;
+  }): Promise<Blob> => {
+    try {
+      let url = `${API_BASE_URL}/visitors/export/excel`;
+      const params = new URLSearchParams();
+
+      if (filters?.startDate) params.append('startDate', filters.startDate);
+      if (filters?.endDate) params.append('endDate', filters.endDate);
+      if (filters?.status) params.append('status', filters.status);
+      if (filters?.category) params.append('category', filters.category);
+      if (filters?.department) params.append('department', filters.department);
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export data');
+      }
+
+      return response.blob();
+    } catch (error) {
+      console.error('Export to Excel error:', error);
+      throw error;
     }
   },
 };
@@ -626,7 +689,7 @@ export const trainingAPI = {
 
   getTrainingStatus: async (visitorId: string, token: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/training/status/${visitorId}`, {
+      const response = await fetch(`${API_BASE_URL}/training/enrollments/visitor/${visitorId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -921,6 +984,201 @@ export interface Employee {
   department: string;
 }
 
+export interface Site {
+  _id: string;
+  name: string;
+  location: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+  departments: Department[];
+  meetingLocations: MeetingLocation[];
+  settings: SiteSettings;
+  isActive: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Department {
+  _id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  siteName?: string;
+  siteId?: string;
+}
+
+export interface MeetingLocation {
+  _id: string;
+  name: string;
+  description?: string;
+  capacity: number;
+  isActive: boolean;
+  siteName?: string;
+  siteId?: string;
+}
+
+export interface SiteSettings {
+  visitorEnabled: boolean;
+  contractorEnabled: boolean;
+  requireApproval: boolean;
+  autoApproveVisitors: boolean;
+  autoApproveContractors: boolean;
+  emailNotificationsEnabled: boolean;
+  mainNotificationEmail: string;
+  additionalNotificationEmails: string[];
+}
+
+// Site API
+export const siteAPI = {
+  // Get all sites
+  getAllSites: async (token: string): Promise<Site[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/sites`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get sites error:', error);
+      throw error;
+    }
+  },
+
+  // Get all departments
+  getAllDepartments: async (token: string): Promise<Department[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/sites/departments`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get departments error:', error);
+      throw error;
+    }
+  },
+
+  // Get all meeting locations
+  getAllMeetingLocations: async (token: string): Promise<MeetingLocation[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/sites/meeting-locations`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get meeting locations error:', error);
+      throw error;
+    }
+  },
+
+  // Get site settings
+  getSiteSettings: async (siteId: string, token: string): Promise<SiteSettings> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/sites/${siteId}/settings`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get site settings error:', error);
+      throw error;
+    }
+  },
+
+  // Update site settings
+  updateSiteSettings: async (siteId: string, settings: Partial<SiteSettings>, token: string): Promise<SiteSettings> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/sites/${siteId}/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(settings),
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Update site settings error:', error);
+      throw error;
+    }
+  },
+
+  // Create site
+  createSite: async (siteData: any, token: string): Promise<any> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/sites`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(siteData),
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Create site error:', error);
+      throw error;
+    }
+  },
+
+  // Update site
+  updateSite: async (siteId: string, siteData: any, token: string): Promise<any> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/sites/${siteId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(siteData),
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Update site error:', error);
+      throw error;
+    }
+  },
+
+  // Delete site
+  deleteSite: async (siteId: string, token: string): Promise<any> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/sites/${siteId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Delete site error:', error);
+      throw error;
+    }
+  },
+};
+
 // Employee API
 export const employeeAPI = {
   getEmployees: async (token: string): Promise<Employee[]> => {
@@ -1082,124 +1340,7 @@ export const employeeAPI = {
   },
 };
 
-// Analytics API
-export const analyticsAPI = {
-  getVisitorMetrics: async (token: string, startDate?: string, endDate?: string): Promise<any> => {
-    try {
-      let url = `${API_BASE_URL}/analytics/visitors`;
-      const params = new URLSearchParams();
 
-      if (startDate) params.append('startDate', startDate);
-      if (endDate) params.append('endDate', endDate);
-
-      if (params.toString()) {
-        url += `?${params.toString()}`;
-      }
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      return handleResponse(response);
-    } catch (error) {
-      console.error('Get visitor metrics error:', error);
-
-      // Throw an error if the API fails
-      throw error;
-    }
-  },
-
-  getAccessMetrics: async (token: string, startDate?: string, endDate?: string): Promise<any> => {
-    try {
-      let url = `${API_BASE_URL}/analytics/access`;
-      const params = new URLSearchParams();
-
-      if (startDate) params.append('startDate', startDate);
-      if (endDate) params.append('endDate', endDate);
-
-      if (params.toString()) {
-        url += `?${params.toString()}`;
-      }
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      return handleResponse(response);
-    } catch (error) {
-      console.error('Get access metrics error:', error);
-
-      // Throw an error if the API fails
-      throw error;
-    }
-  },
-
-  getTrainingMetrics: async (token: string, startDate?: string, endDate?: string) => {
-    try {
-      let url = `${API_BASE_URL}/analytics/training`;
-      const params = new URLSearchParams();
-
-      if (startDate) params.append('startDate', startDate);
-      if (endDate) params.append('endDate', endDate);
-
-      if (params.toString()) {
-        url += `?${params.toString()}`;
-      }
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      return handleResponse(response);
-    } catch (error) {
-      console.error('Get training metrics error:', error);
-      throw error;
-    }
-  },
-
-  getSystemMetrics: async (token: string) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/analytics/system`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      return handleResponse(response);
-    } catch (error) {
-      console.error('Get system metrics error:', error);
-      throw error;
-    }
-  },
-
-  getDashboardSummary: async (token: string): Promise<any> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/analytics/dashboard`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      return handleResponse(response);
-    } catch (error) {
-      console.error('Get dashboard summary error:', error);
-
-      // Throw an error if the API fails
-      throw error;
-    }
-  },
-};
 
 // Admin API
 export interface SystemSettings {
@@ -1432,3 +1573,55 @@ export const adminAPI = {
     }
   },
 };
+
+// Analytics API
+export const analyticsAPI = {
+  getVisitorStats: async (token: string): Promise<{ total: number; checkedIn: number; checkedOut: number; scheduled: number; pending?: number; approved?: number }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/analytics/visitors`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get visitor stats error:', error);
+      throw error;
+    }
+  },
+
+  getAccessMetrics: async (token: string): Promise<any> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/analytics/access`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get access metrics error:', error);
+      throw error;
+    }
+  },
+
+  getTrainingMetrics: async (token: string): Promise<any> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/analytics/training`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get training metrics error:', error);
+      throw error;
+    }
+  },
+};
+

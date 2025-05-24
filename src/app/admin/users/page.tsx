@@ -38,79 +38,12 @@ export default function UsersPage() {
     } catch (err) {
       console.error('Error fetching users:', err);
       setError(err instanceof Error ? err.message : 'Failed to load users');
-
-      // Create mock data as fallback
-      const mockUsers = createMockUsers();
-      setUsers(mockUsers);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const createMockUsers = (): User[] => {
-    return [
-      {
-        _id: '1',
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        role: 'admin',
-        department: 'IT',
-        phoneNumber: '123-456-7890',
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        _id: '2',
-        firstName: 'Jane',
-        lastName: 'Smith',
-        email: 'jane.smith@example.com',
-        role: 'host',
-        department: 'HR',
-        phoneNumber: '123-456-7891',
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        _id: '3',
-        firstName: 'Bob',
-        lastName: 'Johnson',
-        email: 'bob.johnson@example.com',
-        role: 'security',
-        department: 'Security',
-        phoneNumber: '123-456-7892',
-        isActive: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        _id: '4',
-        firstName: 'Alice',
-        lastName: 'Williams',
-        email: 'alice.williams@example.com',
-        role: 'staff',
-        department: 'Finance',
-        phoneNumber: '123-456-7893',
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        _id: '5',
-        firstName: 'Charlie',
-        lastName: 'Brown',
-        email: 'charlie.brown@example.com',
-        role: 'manager',
-        department: 'Operations',
-        phoneNumber: '123-456-7894',
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    ];
-  };
+
 
   const filterUsers = () => {
     let filtered = [...users];
