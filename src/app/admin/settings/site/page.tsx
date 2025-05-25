@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { siteAPI, Department, MeetingLocation, SiteSettings } from '@/lib/api';
-import { Building, MapPin, Settings, Plus, Edit, Trash2, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { Building, MapPin, Settings, Plus, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function SiteSettingsPage() {
@@ -18,8 +18,6 @@ export default function SiteSettingsPage() {
   // Form states
   const [newDepartment, setNewDepartment] = useState('');
   const [newLocation, setNewLocation] = useState('');
-  const [editingDept, setEditingDept] = useState<string | null>(null);
-  const [editingLocation, setEditingLocation] = useState<string | null>(null);
 
   const { user, token } = useAuth();
 
@@ -36,11 +34,25 @@ export default function SiteSettingsPage() {
     setError(null);
 
     try {
-      const [deptData, locationData, settingsData] = await Promise.all([
+      const [deptData, locationData] = await Promise.all([
         siteAPI.getAllDepartments(token),
         siteAPI.getAllMeetingLocations(token),
+<<<<<<< HEAD
         siteAPI.getSiteSettings(token, undefined).catch(() => null) // Settings might not exist yet
+=======
+>>>>>>> 7ed08c78306c539d826284b9c657a488dd7abb56
       ]);
+
+      // Try to get site settings if we have sites available
+      let settingsData = null;
+      try {
+        const sites = await siteAPI.getAllSites(token);
+        if (sites && sites.length > 0) {
+          settingsData = await siteAPI.getSiteSettings(sites[0]._id, token);
+        }
+      } catch (settingsError) {
+        console.warn('Could not load site settings:', settingsError);
+      }
 
       setDepartments(deptData);
       setMeetingLocations(locationData);
@@ -290,7 +302,7 @@ export default function SiteSettingsPage() {
                       <label className="flex items-center">
                         <input
                           type="checkbox"
-                          checked={siteSettings?.enableVisitors !== false}
+                          checked={siteSettings?.visitorEnabled !== false}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                           readOnly
                         />
@@ -299,7 +311,7 @@ export default function SiteSettingsPage() {
                       <label className="flex items-center">
                         <input
                           type="checkbox"
-                          checked={siteSettings?.enableContractors !== false}
+                          checked={siteSettings?.contractorEnabled !== false}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                           readOnly
                         />

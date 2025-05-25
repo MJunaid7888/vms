@@ -11,9 +11,7 @@ import {
   Title,
   Tooltip,
   Legend,
-  ArcElement,
-  ChartData,
-  ChartOptions
+  ArcElement
 } from 'chart.js';
 import { Bar, Line, Pie } from 'react-chartjs-2';
 
@@ -38,12 +36,12 @@ interface ChartProps {
 }
 
 export default function VisitorChart({ data, type, title, height = 300 }: ChartProps) {
-  const [chartData, setChartData] = useState<ChartData<'bar' | 'line' | 'pie', number[], string>>({
+  const [chartData, setChartData] = useState<any>({
     labels: [],
     datasets: []
   });
-  
-  const [chartOptions, setChartOptions] = useState<ChartOptions<'bar' | 'line' | 'pie'>>({
+
+  const chartOptions: any = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -59,7 +57,7 @@ export default function VisitorChart({ data, type, title, height = 300 }: ChartP
         }
       },
     },
-  });
+  };
 
   useEffect(() => {
     if (!data) return;
@@ -130,7 +128,7 @@ export default function VisitorChart({ data, type, title, height = 300 }: ChartP
         };
         setChartData(chartData);
       }
-    } 
+    }
     // For pie charts
     else if (type === 'pie') {
       // For visitor status distribution
@@ -192,7 +190,7 @@ export default function VisitorChart({ data, type, title, height = 300 }: ChartP
 
   return (
     <div style={{ height: `${height}px` }}>
-      {type === 'bar' && <Bar data={chartData} options={chartOptions} />}
+      {type === 'bar' && <Bar  data={chartData} options={chartOptions} />}
       {type === 'line' && <Line data={chartData} options={chartOptions} />}
       {type === 'pie' && <Pie data={chartData} options={chartOptions} />}
     </div>

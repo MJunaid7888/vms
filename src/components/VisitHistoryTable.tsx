@@ -65,14 +65,14 @@ export default function VisitHistoryTable({
             if (startDate) {
               const startDateObj = new Date(startDate);
               filteredVisitors = filteredVisitors.filter(v =>
-                new Date(v.visitStartDate || v.visitDate) >= startDateObj
+                new Date(v.visitStartDate) >= startDateObj
               );
             }
 
             if (endDate) {
               const endDateObj = new Date(endDate);
               filteredVisitors = filteredVisitors.filter(v =>
-                new Date(v.visitStartDate || v.visitDate) <= endDateObj
+                new Date(v.visitStartDate) <= endDateObj
               );
             }
 
@@ -272,7 +272,7 @@ export default function VisitHistoryTable({
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatDate(visit.visitDate)}
+                  {formatDate(visit.visitStartDate)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {formatTime(visit.checkInTime)}
@@ -339,7 +339,7 @@ export default function VisitHistoryTable({
 
                 <div>
                   <span className="font-medium text-gray-500">Visit Date:</span>
-                  <div className="mt-1 text-gray-900">{formatDate(visit.visitDate)}</div>
+                  <div className="mt-1 text-gray-900">{formatDate(visit.visitStartDate)}</div>
                 </div>
 
                 <div>

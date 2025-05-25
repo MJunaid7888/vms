@@ -1,34 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import VisitHistoryTable from '@/components/VisitHistoryTable';
-import { Users, Calendar, Clock, BarChart2, ArrowUp, FileText, BookOpen, RefreshCw } from 'lucide-react';
+import { Users, Calendar, Clock, BarChart2, ArrowUp, FileText, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import { visitorAPI, analyticsAPI } from '@/lib/api';
 import AnalyticsDashboard from '@/components/charts/AnalyticsDashboard';
 
 export default function AdminDashboard() {
-  const [startDate, setStartDate] = useState<string>(
+  const [startDate] = useState<string>(
     new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   );
-  const [endDate, setEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [endDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [visitorStats, setVisitorStats] = useState({
     total: 0,
     checkedIn: 0,
     checkedOut: 0,
-    scheduled: 0
+    scheduled: 0,
+    pending: 0,
+    approved: 0
   });
   const [isLoading, setIsLoading] = useState(true);
   const { user, token } = useAuth();
 
-  useEffect(() => {
-    if (token) {
-      fetchVisitorStats();
-    }
-  }, [token]);
-
-  const fetchVisitorStats = async () => {
+    const fetchVisitorStats = useCallback(async () => {
     if (!token) return;
 
     setIsLoading(true);
@@ -36,7 +32,15 @@ export default function AdminDashboard() {
       // Try to get visitor stats from analytics API first
       try {
         const stats = await analyticsAPI.getVisitorStats(token);
-        setVisitorStats(stats);
+        // Transform the stats to match our expected format
+        setVisitorStats({
+          total: stats.total,
+          checkedIn: stats.checkedIn,
+          checkedOut: stats.checkedOut,
+          scheduled: stats.scheduled,
+          pending: stats.pending || 0,
+          approved: stats.approved || 0
+        });
         return;
       } catch (analyticsError) {
         console.error('Error fetching visitor stats from analytics API:', analyticsError);
@@ -67,7 +71,9 @@ export default function AdminDashboard() {
         total: 0,
         checkedIn: 0,
         checkedOut: 0,
-        scheduled: 0
+        scheduled: 0,
+        pending: 0,
+        approved: 0
       });
 
     } catch (error) {
@@ -78,12 +84,21 @@ export default function AdminDashboard() {
         total: 0,
         checkedIn: 0,
         checkedOut: 0,
-        scheduled: 0
+        scheduled: 0,
+        pending: 0,
+        approved: 0
       });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (token) {
+      fetchVisitorStats();
+    }
+  }, [token, fetchVisitorStats]);
+
 
   if (!user) {
     return null; // AppBar will handle unauthorized access
@@ -94,7 +109,7 @@ export default function AdminDashboard() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
         <p className="mt-2 text-gray-600">
-          Welcome back, {user.firstName}. Here's an overview of your visitor management system.
+          Welcome back, {user.firstName}. Here&apos;s an overview of your visitor management system.
         </p>
       </div>
 

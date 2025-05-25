@@ -1,18 +1,22 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { useAuth } from '@/lib/AuthContext';
+import { useAuthGuard } from '@/lib/withAuth';
 import AdminSidebar from '@/components/AdminSidebar';
 import AppBar from '@/components/AppBar';
-import { AlertCircle } from 'lucide-react';
 
 interface AdminLayoutProps {
   children: ReactNode;
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuthGuard({
+    requireAuth: true,
+    allowedRoles: ['admin', 'manager', 'security'], // Allow admin, manager, and security roles
+    redirectTo: '/login'
+  });
 
+  // Show loading while checking authentication
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -25,51 +29,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <AppBar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div 
-            className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 flex items-start"
-            role="alert"
-          >
-            <AlertCircle className="h-5 w-5 mr-2 mt-0.5" aria-hidden="true" />
-            <div>
-              <p className="font-medium">Access Denied</p>
-              <p>You must be logged in to access the admin area.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (user.role !== 'admin') {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <AppBar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div 
-            className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 flex items-start"
-            role="alert"
-          >
-            <AlertCircle className="h-5 w-5 mr-2 mt-0.5" aria-hidden="true" />
-            <div>
-              <p className="font-medium">Access Denied</p>
-              <p>You do not have permission to access the admin area.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  // Don't render anything if not authenticated (useAuthGuard will handle redirect)
+  if (!isAuthenticated) {
+    return null;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <AppBar />
       <AdminSidebar />
-      
+
       <div className="lg:pl-64 pt-16">
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {children}

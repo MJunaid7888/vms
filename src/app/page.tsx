@@ -11,8 +11,7 @@ import {
   Shield,
   BookOpen,
   ChevronRight,
-  CheckCircle,
-  Building
+  CheckCircle
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";

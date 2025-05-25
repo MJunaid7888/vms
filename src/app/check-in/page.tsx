@@ -53,15 +53,13 @@ export default function VisitorForm() {
   // State for departments and meeting locations
   const [departments, setDepartments] = useState<Department[]>([]);
   const [meetingLocations, setMeetingLocations] = useState<MeetingLocation[]>([]);
-  const [loadingDepartments, setLoadingDepartments] = useState(false);
-  const [loadingMeetingLocations, setLoadingMeetingLocations] = useState(false);
 
   // Return visitor search
   const [searchEmail, setSearchEmail] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
-  const { user, token } = useAuth();
+  const { token } = useAuth();
 
   // Fetch employees, departments, and meeting locations when component mounts
   useEffect(() => {
@@ -73,20 +71,14 @@ export default function VisitorForm() {
           setEmployees(employeeData);
 
           // Fetch departments
-          setLoadingDepartments(true);
           const departmentData = await siteAPI.getAllDepartments(token);
           setDepartments(departmentData);
-          setLoadingDepartments(false);
 
           // Fetch meeting locations
-          setLoadingMeetingLocations(true);
           const locationData = await siteAPI.getAllMeetingLocations(token);
           setMeetingLocations(locationData);
-          setLoadingMeetingLocations(false);
         } catch (err) {
           console.error('Failed to fetch data:', err);
-          setLoadingDepartments(false);
-          setLoadingMeetingLocations(false);
         }
       }
     };

@@ -6,16 +6,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { visitorAPI, Visitor } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
-import { 
-  User, 
-  Mail, 
-  Search, 
-  CheckCircle, 
-  AlertCircle, 
-  Clock, 
-  LogOut, 
-  QrCode,
-  ArrowLeft
+import {
+  User,
+  Mail,
+  Search,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  LogOut,
+  QrCode
 } from 'lucide-react';
 import AppBar from '@/components/AppBar';
 import QRCodeScanner from '@/components/QRCodeScanner';
@@ -38,7 +37,7 @@ export default function CheckOut() {
 
   const searchVisitor = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    
+
     if (!searchEmail) {
       setError('Please enter an email address');
       return;
@@ -51,10 +50,10 @@ export default function CheckOut() {
 
     try {
       const visitors = await visitorAPI.searchVisitorsByEmail(searchEmail, token || '');
-      
+
       // Filter for only checked-in visitors
       const checkedInVisitors = visitors.filter(visitor => visitor.status === 'checked-in');
-      
+
       if (checkedInVisitors.length === 0) {
         setError('No checked-in visitors found with this email address');
       } else {
@@ -75,12 +74,12 @@ export default function CheckOut() {
 
     try {
       await visitorAPI.checkOutVisitor(visitorId, token || '');
-      
+
       // Update the search results to reflect the change
-      setSearchResults(prev => 
+      setSearchResults(prev =>
         prev.filter(visitor => visitor._id !== visitorId)
       );
-      
+
       setSuccess('You have been checked out successfully. Thank you for your visit!');
     } catch (err) {
       console.error('Error checking out visitor:', err);
@@ -93,7 +92,7 @@ export default function CheckOut() {
   return (
     <div className="min-h-screen bg-gray-50">
       <AppBar />
-      
+
       {/* QR Code Scanner */}
       {showScanner && token && (
         <QRCodeScanner
@@ -151,7 +150,7 @@ export default function CheckOut() {
                 <Mail className="h-5 w-5 text-blue-600 mr-2" />
                 Find Your Visit
               </h2>
-              
+
               <form onSubmit={searchVisitor} className="space-y-4">
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="flex-grow relative">
@@ -189,13 +188,13 @@ export default function CheckOut() {
                   </button>
                 </div>
               </form>
-              
+
               <div className="mt-4 flex items-center justify-center">
                 <div className="border-t border-gray-200 w-full"></div>
                 <span className="px-3 bg-white text-gray-500 text-sm">OR</span>
                 <div className="border-t border-gray-200 w-full"></div>
               </div>
-              
+
               <div className="mt-4 flex justify-center">
                 <button
                   onClick={() => setShowScanner(true)}
@@ -233,8 +232,8 @@ export default function CheckOut() {
                           <div className="mt-3 ml-13 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
                             <p className="text-sm text-gray-500 flex items-center">
                               <Clock className="h-4 w-4 text-gray-400 mr-2" />
-                              <span className="font-medium mr-1">Check-in time:</span> 
-                              {visitor.checkInTime 
+                              <span className="font-medium mr-1">Check-in time:</span>
+                              {visitor.checkInTime
                                 ? new Date(visitor.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                                 : 'Not recorded'}
                             </p>

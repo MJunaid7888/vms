@@ -44,9 +44,10 @@ export default function DocumentsPage() {
     setError(null);
 
     try {
-      // This is a placeholder - in a real app, you would use a specific API endpoint to get all visitors
-      // For now, we'll use the getVisitorsByHost endpoint which returns visitors for the current user
-      const visitorData = await visitorAPI.getVisitorsByHost(token);
+      // For admin users, get all visitors; for others, get only their hosted visitors
+      const visitorData = user?.role === 'admin' || user?.role === 'manager' || user?.role === 'security'
+        ? await visitorAPI.getAllVisitors(token)
+        : await visitorAPI.getVisitorsByHost(token);
       setVisitors(visitorData);
       setFilteredVisitors(visitorData);
 

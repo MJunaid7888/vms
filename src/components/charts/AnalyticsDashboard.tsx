@@ -3,14 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { analyticsAPI } from '@/lib/api';
-import { 
-  BarChart2, 
-  PieChart, 
-  TrendingUp, 
-  Users, 
-  Calendar, 
-  Clock, 
-  Shield, 
+import {
+  BarChart2,
+  PieChart,
+  TrendingUp,
+  Users,
+  Shield,
   RefreshCw,
   AlertCircle
 } from 'lucide-react';
@@ -77,11 +75,22 @@ export default function AnalyticsDashboard({ refreshInterval = 60000 }: Analytic
 
       // Fetch visitor and access metrics in parallel
       const [visitorData, accessData] = await Promise.all([
-        analyticsAPI.getVisitorMetrics(token, dateRange.startDate, dateRange.endDate),
-        analyticsAPI.getAccessMetrics(token, dateRange.startDate, dateRange.endDate),
+        analyticsAPI.getVisitorStats(token),
+        analyticsAPI.getAccessMetrics(token),
       ]);
 
-      setVisitorMetrics(visitorData as VisitorMetrics);
+      // Transform visitor data to match interface
+      const transformedVisitorData: VisitorMetrics = {
+        totalVisitors: visitorData.total,
+        checkedIn: visitorData.checkedIn,
+        checkedOut: visitorData.checkedOut,
+        scheduled: visitorData.scheduled,
+        cancelled: 0, // Default value
+        visitorsByDay: [], // Default empty array
+        visitorsByPurpose: [] // Default empty array
+      };
+
+      setVisitorMetrics(transformedVisitorData);
       setAccessMetrics(accessData as AccessMetrics);
       setLastUpdated(new Date());
       setError(null);

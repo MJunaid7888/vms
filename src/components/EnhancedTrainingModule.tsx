@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { trainingAPI } from '@/lib/api';
+import { trainingAPI, TrainingSubmissionResponse } from '@/lib/api';
 import {
   BookOpen,
   CheckCircle,
@@ -90,7 +90,7 @@ export default function EnhancedTrainingModule({
           const trainingStatus = await trainingAPI.getTrainingStatus(visitorId, token);
 
           // If visitor has already completed all required trainings, show a message
-          if (trainingStatus && trainingStatus.length > 0 && trainingStatus.every(t => t.passed)) {
+          if (Array.isArray(trainingStatus) && trainingStatus.length > 0 && trainingStatus.every((completion: any) => completion.passed)) {
             // All trainings completed, but we'll still show available trainings
             console.log('All required trainings completed');
           }
@@ -164,7 +164,7 @@ export default function EnhancedTrainingModule({
 
       try {
         // Try to submit to API
-        const response = await trainingAPI.submitTraining(
+        const response: TrainingSubmissionResponse = await trainingAPI.submitTraining(
           visitorId,
           currentTraining._id,
           selectedAnswers,

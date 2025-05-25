@@ -1,6 +1,27 @@
 // API service for VMS backend
 const API_BASE_URL = 'https://vms-api-s6lc.onrender.com/api/v1';
 
+// Token expiration handler
+let logoutCallback: (() => void) | null = null;
+
+export const setLogoutCallback = (callback: () => void) => {
+  logoutCallback = callback;
+};
+
+// Handle token expiration
+const handleTokenExpiration = () => {
+  console.warn('Token expired, logging out user');
+  if (logoutCallback) {
+    logoutCallback();
+  } else {
+    // Fallback: clear localStorage and redirect
+    localStorage.removeItem('vms_user');
+    localStorage.removeItem('vms_token');
+    localStorage.removeItem('vms_refresh_token');
+    window.location.href = '/login';
+  }
+};
+
 // Types
 export interface LoginCredentials {
   email: string;
@@ -12,6 +33,7 @@ export interface SignupData {
   lastName: string;
   email: string;
   password: string;
+  confirmPassword?: string;
   department: string;
   phoneNumber: string;
   role?: string;
@@ -83,8 +105,22 @@ export interface ApiResponse<T> {
 const handleResponse = async <T>(response: Response): Promise<T> => {
   const data = await response.json();
   console.log("API Response", data)
+
   if (!response.ok) {
     const errorMessage = data.message || 'An error occurred';
+
+    // Check for token expiration (401 Unauthorized)
+    if (response.status === 401) {
+      console.warn('Received 401 Unauthorized - token may be expired');
+      handleTokenExpiration();
+      throw new Error('Session expired. Please log in again.');
+    }
+
+    // Check for other authentication/authorization errors
+    if (response.status === 403) {
+      throw new Error('Access denied. You do not have permission to perform this action.');
+    }
+
     throw new Error(errorMessage);
   }
 
@@ -242,6 +278,46 @@ export const visitorAPI = {
       return handleResponse(response);
     } catch (error) {
       console.error('Schedule visit error:', error);
+      throw error;
+    }
+  },
+
+  // Get all visitors (admin/manager/security only)
+  getAllVisitors: async (token: string, filters?: {
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    category?: string;
+    department?: string;
+    search?: string;
+  }): Promise<Visitor[]> => {
+    try {
+      let url = `${API_BASE_URL}/visitors`;
+      const params = new URLSearchParams();
+
+      if (filters) {
+        if (filters.status) params.append('status', filters.status);
+        if (filters.startDate) params.append('startDate', filters.startDate);
+        if (filters.endDate) params.append('endDate', filters.endDate);
+        if (filters.category) params.append('category', filters.category);
+        if (filters.department) params.append('department', filters.department);
+        if (filters.search) params.append('search', filters.search);
+      }
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get all visitors error:', error);
       throw error;
     }
   },
@@ -574,6 +650,21 @@ export interface TrainingEnrollment {
   passed?: boolean;
 }
 
+export interface TrainingCompletion {
+  _id: string;
+  visitorId: string;
+  trainingId: string;
+  score: number;
+  passed: boolean;
+  completedAt: string;
+}
+
+export interface TrainingSubmissionResponse {
+  score: number;
+  passed: boolean;
+  completion: TrainingCompletion;
+}
+
 export interface Certificate {
   certificateId: string;
   visitorName: string;
@@ -669,7 +760,7 @@ export const trainingAPI = {
     }
   },
 
-  submitTraining: async (visitorId: string, trainingId: string, answers: number[], token: string) => {
+  submitTraining: async (visitorId: string, trainingId: string, answers: number[], token: string): Promise<TrainingSubmissionResponse> => {
     try {
       const response = await fetch(`${API_BASE_URL}/training/submit`, {
         method: 'POST',
@@ -687,7 +778,7 @@ export const trainingAPI = {
     }
   },
 
-  getTrainingStatus: async (visitorId: string, token: string) => {
+  getTrainingStatus: async (visitorId: string, token: string): Promise<TrainingCompletion[]> => {
     try {
       const response = await fetch(`${API_BASE_URL}/training/enrollments/visitor/${visitorId}`, {
         method: 'GET',
@@ -1174,6 +1265,78 @@ export const siteAPI = {
       return handleResponse(response);
     } catch (error) {
       console.error('Delete site error:', error);
+      throw error;
+    }
+  },
+
+  // Create department
+  createDepartment: async (departmentData: { name: string; description?: string }, token: string): Promise<Department> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/sites/departments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(departmentData),
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Create department error:', error);
+      throw error;
+    }
+  },
+
+  // Delete department
+  deleteDepartment: async (departmentId: string, token: string): Promise<{ message: string }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/sites/departments/${departmentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Delete department error:', error);
+      throw error;
+    }
+  },
+
+  // Create meeting location
+  createMeetingLocation: async (locationData: { name: string; description?: string; capacity?: number }, token: string): Promise<MeetingLocation> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/sites/meeting-locations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ...locationData, capacity: locationData.capacity || 10 }),
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Create meeting location error:', error);
+      throw error;
+    }
+  },
+
+  // Delete meeting location
+  deleteMeetingLocation: async (locationId: string, token: string): Promise<{ message: string }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/sites/meeting-locations/${locationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Delete meeting location error:', error);
       throw error;
     }
   },
