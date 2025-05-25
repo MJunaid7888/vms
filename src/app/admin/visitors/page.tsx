@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { visitorAPI, siteAPI, Visitor, Department, MeetingLocation } from '@/lib/api';
+import { visitorAPI, siteAPI, Visitor, Department } from '@/lib/api';
 import { Users, Search, AlertCircle, CheckCircle, XCircle, Eye, FileText, Check, X, Download, Filter } from 'lucide-react';
 import Link from 'next/link';
 
@@ -75,8 +75,8 @@ export default function VisitorsPage() {
 
     try {
       // For admin users, get all visitors; for others, get only their hosted visitors
-      const visitorData = user?.role === 'admin' || user?.role === 'manager'
-        ? await visitorAPI.getVisitHistory(token)
+      const visitorData = user?.role === 'admin' || user?.role === 'manager' || user?.role === 'security'
+        ? await visitorAPI.getAllVisitors(token)
         : await visitorAPI.getVisitorsByHost(token);
       setVisitors(visitorData);
       setFilteredVisitors(visitorData);

@@ -8,10 +8,7 @@ import {
   Clock,
   Shield,
   Users,
-  Star,
-  Building,
-  BarChart2,
-  ChevronRight
+  Star
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import QRCodeScanner from "@/components/QRCodeScanner";

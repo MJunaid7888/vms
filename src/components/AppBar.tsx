@@ -11,7 +11,6 @@ import {
   User,
   LogOut,
   Settings,
-  Bell,
   BarChart2,
   Home,
   UserPlus,

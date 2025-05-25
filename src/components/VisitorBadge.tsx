@@ -135,14 +135,18 @@ export default function VisitorBadge({ visitor, hostName }: VisitorBadgeProps) {
           <div className={`inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm font-medium mb-3 sm:mb-4 ${
             visitor.status === 'checked-in'
               ? 'bg-green-100 text-green-800'
-              : visitor.status === 'scheduled'
+              : visitor.status === 'approved'
                 ? 'bg-blue-100 text-blue-800'
-                : 'bg-gray-100 text-gray-800'
+                : visitor.status === 'pending'
+                  ? 'bg-yellow-100 text-yellow-800'
+                  : 'bg-gray-100 text-gray-800'
           }`}>
             <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
             {visitor.status === 'checked-in' ? 'Checked In' :
-             visitor.status === 'scheduled' ? 'Scheduled' :
+             visitor.status === 'approved' ? 'Approved' :
+             visitor.status === 'pending' ? 'Pending' :
              visitor.status === 'checked-out' ? 'Checked Out' :
+             visitor.status === 'cancelled' ? 'Cancelled' :
              visitor.status}
           </div>
 
@@ -151,7 +155,7 @@ export default function VisitorBadge({ visitor, hostName }: VisitorBadgeProps) {
             <div className="flex items-center text-gray-700">
               <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 mr-1.5 sm:mr-2 flex-shrink-0" />
               <span className="font-medium mr-1">Date:</span>
-              <span className="truncate">{formatDate(visitor.visitDate)}</span>
+              <span className="truncate">{formatDate(visitor.visitStartDate)}</span>
             </div>
 
             <div className="flex items-start sm:items-center text-gray-700">
@@ -239,7 +243,7 @@ export default function VisitorBadge({ visitor, hostName }: VisitorBadgeProps) {
               Save Badge
             </button>
 
-            {navigator.share && (
+            {typeof navigator !== 'undefined' && 'share' in navigator && (
               <button
                 onClick={handleShare}
                 className="flex items-center text-gray-700 hover:text-blue-700 text-xs sm:text-sm py-1"

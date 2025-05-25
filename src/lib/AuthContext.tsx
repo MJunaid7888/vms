@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authAPI, LoginCredentials, SignupData, User as ApiUser } from './api';
+import { authAPI, LoginCredentials, SignupData, User as ApiUser, setLogoutCallback } from './api';
 
 interface AuthUser {
   id: string;
@@ -36,7 +36,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const logout = () => {
+    // Clear state
+    setUser(null);
+    setToken(null);
+    setRefreshToken(null);
+
+    // Clear localStorage
+    localStorage.removeItem('vms_user');
+    localStorage.removeItem('vms_token');
+    localStorage.removeItem('vms_refresh_token');
+
+    // Redirect to login page
+    window.location.href = '/login';
+  };
+
   useEffect(() => {
+    // Register logout callback for token expiration handling
+    setLogoutCallback(logout);
+
     // Check if user is already logged in
     const storedUser = localStorage.getItem('vms_user');
     const storedToken = localStorage.getItem('vms_token');
@@ -119,6 +137,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshAccessToken = async () => {
     if (!refreshToken) {
+      console.warn('No refresh token available, logging out');
+      logout();
       throw new Error('No refresh token available');
     }
 
@@ -129,8 +149,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(response.accessToken);
       localStorage.setItem('vms_token', response.accessToken);
 
+      console.log('Token refreshed successfully');
       return response.accessToken;
     } catch (err) {
+      console.error('Token refresh failed:', err);
       // If refresh token is invalid, log the user out
       logout();
       throw err;
@@ -194,18 +216,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       throw err;
     }
-  };
-
-  const logout = () => {
-    // Clear state
-    setUser(null);
-    setToken(null);
-    setRefreshToken(null);
-
-    // Clear localStorage
-    localStorage.removeItem('vms_user');
-    localStorage.removeItem('vms_token');
-    localStorage.removeItem('vms_refresh_token');
   };
 
   return (

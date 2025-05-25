@@ -1,22 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { trainingAPI } from '@/lib/api';
-
-interface TrainingQuestion {
-  _id: string;
-  question: string;
-  options: string[];
-  correctAnswer: number;
-}
-
-interface Training {
-  _id: string;
-  title: string;
-  description: string;
-  questions: TrainingQuestion[];
-  passingScore: number;
-}
+import { trainingAPI, TrainingSubmissionResponse, Training } from '@/lib/api';
 
 interface TrainingModuleProps {
   visitorId: string;
@@ -33,7 +18,7 @@ export default function TrainingModule({ visitorId, token, onComplete, onClose }
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [trainingStatus, setTrainingStatus] = useState<'not_started' | 'in_progress' | 'completed' | 'failed'>('not_started');
+  const [trainingStatus, setTrainingStatus] = useState<'not_started' | 'in_progress' | 'completed' | 'failed' | 'not_available'>('not_started');
   const [score, setScore] = useState<number | null>(null);
 
   // Fetch trainings and training status
@@ -46,10 +31,14 @@ export default function TrainingModule({ visitorId, token, onComplete, onClose }
           // Fetch training status first
           const statusResponse = await trainingAPI.getTrainingStatus(visitorId, token);
 
-          if (statusResponse && statusResponse.completed) {
-            setTrainingStatus('completed');
-            setScore(statusResponse.score);
-            return;
+          // Check if visitor has completed any training
+          if (Array.isArray(statusResponse) && statusResponse.length > 0) {
+            const completedTraining = statusResponse.find(completion => completion.passed);
+            if (completedTraining) {
+              setTrainingStatus('completed');
+              setScore(completedTraining.score);
+              return;
+            }
           }
         } catch (statusError) {
           console.error('Error fetching training status:', statusError);
@@ -122,7 +111,7 @@ export default function TrainingModule({ visitorId, token, onComplete, onClose }
 
       try {
         // Try to submit to API
-        const response = await trainingAPI.submitTraining(
+        const response: TrainingSubmissionResponse = await trainingAPI.submitTraining(
           visitorId,
           currentTraining._id,
           selectedAnswers,
@@ -228,7 +217,7 @@ export default function TrainingModule({ visitorId, token, onComplete, onClose }
                   Question {currentQuestionIndex + 1} of {currentTraining.questions.length}
                 </span>
                 <span className="text-sm font-medium text-gray-500">
-                  Required to pass: {currentTraining.passingScore}%
+                  Required to pass: {currentTraining.requiredScore}%
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2.5">
