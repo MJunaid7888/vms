@@ -124,7 +124,7 @@ export default function VisitorCheckIn() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Visit Date</p>
-                  <p className="font-medium">{new Date(visitor.visitEndDate).toLocaleDateString()}</p>
+                  <p className="font-medium">{new Date(visitor.visitDate).toLocaleDateString()}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Status</p>
@@ -132,6 +132,7 @@ export default function VisitorCheckIn() {
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                       ${visitor.status === 'checked-in' ? 'bg-green-100 text-green-800' :
                         visitor.status === 'checked-out' ? 'bg-gray-100 text-gray-800' :
+                        visitor.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
                         'bg-red-100 text-red-800'}`}>
                       {visitor.status}
                     </span>
@@ -140,7 +141,7 @@ export default function VisitorCheckIn() {
               </div>
             </div>
 
-            {visitor.status === 'pending' ? (
+            {visitor.status === 'scheduled' ? (
               <div className="flex justify-end">
                 <button
                   onClick={handleCheckIn}

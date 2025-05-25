@@ -54,7 +54,7 @@ export default function AdminDashboard() {
           const checkedOut = visitors.filter(v => v.status === 'checked-out').length;
           const scheduled = approved; // For backward compatibility
 
-          setVisitorStats({ total, pending, approved, checkedIn, checkedOut, scheduled });
+          setVisitorStats({ total, checkedIn, checkedOut, scheduled });
           return;
         }
       } catch (visitorError) {

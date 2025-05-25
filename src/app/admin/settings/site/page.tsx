@@ -39,7 +39,7 @@ export default function SiteSettingsPage() {
       const [deptData, locationData, settingsData] = await Promise.all([
         siteAPI.getAllDepartments(token),
         siteAPI.getAllMeetingLocations(token),
-        siteAPI.getSiteSettings(token).catch(() => null) // Settings might not exist yet
+        siteAPI.getSiteSettings(token, undefined).catch(() => null) // Settings might not exist yet
       ]);
 
       setDepartments(deptData);
